@@ -63,7 +63,6 @@ namespace ConsoleAppProjectServerSSEC
          */
         List<string> project_gui;
 
-
         static void Main(string[] args)
         {
 
@@ -73,8 +72,8 @@ namespace ConsoleAppProjectServerSSEC
             {
                 MySqlConnection connect = new MySqlConnection();
              
-               // string filepath = @"C:\Windows\System\config.xml";
-                string filepath = AppDomain.CurrentDomain.BaseDirectory + @"\config.xml";
+                string filepath = @"C:\Windows\System\config.xml";
+               // string filepath = AppDomain.CurrentDomain.BaseDirectory + "config.xml";
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.Load(filepath);
                 foreach (XmlNode row in xmlDoc.SelectNodes("//SoftwareToInstallPaths"))
@@ -100,13 +99,13 @@ namespace ConsoleAppProjectServerSSEC
                     p.envioemail = row.SelectSingleNode("//envioemail").InnerText;
                     p.para = row.SelectSingleNode("//para").InnerText;
                 }
-                //p.tmrExecutor.Elapsed += new ElapsedEventHandler(p.tmrExecutor_Elapsed);
-                //p.tmrExecutor.Interval = Convert.ToInt16(p.intervalos); // cada 24 horas son 86400000; //cada 5 segundo son 5000 ;
-                //p.tmrExecutor.Enabled = true;
-                //p.tmrExecutor.Start();
-                p.conn();
-                p.leerbd();
-        
+
+                 p.conn();
+                // p.leerbd();
+                p.Project();
+                p.insertProject();
+
+
             }
             catch (Exception ex)
             {
@@ -119,100 +118,39 @@ namespace ConsoleAppProjectServerSSEC
                     writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
                 }
 
-        
-
             }
             finally
             {
-                string mensaje = "Proceso de integracion de Project Online";
-                string filePath = p.log + @"\bitacora.txt";
-                using (StreamWriter writer = new StreamWriter(filePath, true))
-                {
-                    writer.WriteLine("Message :" + mensaje + "<br/>" + Environment.NewLine + "ver archivo csv" +
-                     "" + Environment.NewLine + "Date :" + DateTime.Now.ToString());
-                    writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
-                }
+             
             }
 
         }
 
-        private void tmrExecutor_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
+        private void escribir_error() {
+
+
+
+        }
+
+        /// <sumary>
+        /// Funcion que permite escribir en un archivo tipo texto las transacciones realizadas por la aplicacion 
+        /// </summary>
+        /// <param name="mensaje"> son los datos procesados </param>
+        /// <param name="tipo"> tipo de datos procesados insert, delete , update</param>
+        /// 
+        private void escribir_log( string mensaje , string tipo) {
+
+          
+            string filePath = log + @"\logProject.txt";
+            using (StreamWriter writer = new StreamWriter(filePath, true))
+            {
+                writer.WriteLine("Datos procesados :" + mensaje + Environment.NewLine + tipo +""+ Environment.NewLine + "Dia y Hora de proceso :" + DateTime.Now.ToString());
+                writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
+            }
+
+
+        }
          
-
-            try
-            {
-                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
-                connect = new MySqlConnection(connectionString);
-
-                //(string gui, string fi, string ff, string duracion, int porcent)
-                string sql = "SELECT project_id, start_date, end_date,progress,updated_at  from projects";
-                sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " OR updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " ORDER BY id";
-
-
-                if (connect.State != ConnectionState.Open)
-                {
-                    connect.Open();
-                }
-                using (MySqlDataAdapter da = new MySqlDataAdapter(sql, connect))
-                {
-
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-                    if (dt != null)
-                    {
-
-
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            //Funcion de actualizacion de resitros en el Project
-                            UddateTask(row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
-                            //Lista de GUI lado Mysql para Borrar
-                            ssec_gui = new List<string>();
-                            ssec_gui.Add(row[0].ToString());
-
-                        }
-
-
-                    }
-                    connect.Close();
-                }
-
-
-            }
-            catch (Exception ex)
-            {
-                string error = ex.ToString();
-                //string filePath = log + @"\error.txt";
-                string filePath = log + @"\error.txt";
-                using (StreamWriter writer = new StreamWriter(filePath, true))
-                {
-                    writer.WriteLine("Error :" + ex.Message + "<br/>" + Environment.NewLine + "StackTrace :" + ex.StackTrace +
-                       "" + Environment.NewLine + "Date :" + DateTime.Now.ToString());
-                    writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
-                }
-
-            }
-            finally
-            {
-
-                string mensaje = "Proceso de integracion de Project Online";
-                string filePath = log + @"\bitacora.txt";
-                using (StreamWriter writer = new StreamWriter(filePath, true))
-                {
-                    writer.WriteLine("Message :" + mensaje + "<br/>" + Environment.NewLine + "ver archivo csv" +
-                       "" + Environment.NewLine + "Date :" + DateTime.Now.ToString());
-                    writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
-                }
-
-
-            }
-        }
-
         private void conn()
         {
 
@@ -236,7 +174,7 @@ namespace ConsoleAppProjectServerSSEC
                 connect = new MySqlConnection(connectionString);
 
                 //(string gui, string fi, string ff, string duracion, int porcent)
-                string sql = "SELECT project_id, start_date, end_date,progress,updated_at  from projects";
+                string sql = "SELECT project_id, start_date, end_date,progress,updated_at, name  from projects";
                 sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
                 sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
                 sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
@@ -264,8 +202,9 @@ namespace ConsoleAppProjectServerSSEC
                             //Lista de GUI lado Mysql para Borrar
                             ssec_gui = new List<string>();
                             ssec_gui.Add(row[0].ToString());
-
+                            string mensaje ="Project Name :"+row[5].ToString()+", start date : " + row[1].ToString()+", end_date : "+ row[2].ToString()+", % progress : "+ Convert.ToInt16(row[3])+"";
                             Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
+                            escribir_log(mensaje,"se ctualizaron estos registro en Project Online desde Mysql");
 
                         }
 
@@ -282,7 +221,6 @@ namespace ConsoleAppProjectServerSSEC
             }
         }
 
-
         public void enviarCorreo()
         {
             try
@@ -292,12 +230,11 @@ namespace ConsoleAppProjectServerSSEC
 
                 mail.From = new MailAddress(de);
                 mail.To.Add(new MailAddress(para));
-                mail.Subject = "Error de APP Servicio de Directorio Activo OIRH";
-                mail.Body = "Se ha producido un error en el APP de Servicios de Directorio activo SARH , favor ver archivo de error adjunto";
+                mail.Subject = "Historico de procesos de transacciones desde Project Server Online";
+                mail.Body = "Se ha producido un historico de las transacciones realizadas logProject.txt , si se trata de un error de APP buscar en el archivo error.txt en la ruta configurada, Gracias ";
                 System.Net.Mail.Attachment attachment;
-                attachment = new System.Net.Mail.Attachment(log + @"\error.txt");
+                attachment = new System.Net.Mail.Attachment(log + @"\logProject.txt");
                 mail.Attachments.Add(attachment);
-
                 SmtpServer.Port = 25;
                 SmtpServer.Credentials = new System.Net.NetworkCredential(de, credencial);
                 SmtpServer.EnableSsl = true;
@@ -357,5 +294,199 @@ namespace ConsoleAppProjectServerSSEC
             }
         }
 
+        private void insertProject()
+        {
+
+
+            /*
+                     project_New.Add(Guid);//Project_id IdDelProyecto
+                    project_New.Add(pubProj.Name);//name NombreDeProyecto
+                    project_New.Add(pubProj.Description);//description DescripciónDelProyecto
+                  
+                    //grouper AgrupadordeProyecto
+                    //compromise Compromiso      No va el campo              
+                    project_New.Add(pubProj.StartDate.ToShortDateString());//start_date ComienzoAnticipadoDelProyecto
+                    project_New.Add(pubProj.FinishDate.ToShortDateString());//end_date FechaDeFinalizaciónDelProyecto
+                    //institution InstitucióndelEstado
+                    //action_line LíneadeAcción
+                    //responsable SeguimientodeProyecto
+                    project_New.Add(pubProj.CreatedDate.ToShortDateString());
+             INSERT INTO `AIGDB_SSEC`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, 
+             `start_date`, `end_date`, `institution`, `action_line`, `responsable`
+             */
+
+            try
+            {
+
+              
+                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+                connect = new MySqlConnection(connectionString);
+                var gui = project_New[0];
+                var nombre = project_New[1];
+                var descripcion = project_New[2];
+                var finicio = project_New[3];
+                var ffin = project_New[4];
+                var fcreacion = project_New[5];
+
+
+
+                string sql = " INSERT INTO `AIGDB_SSEC`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`) VALUES ('" + gui + "','" + nombre + "','" + descripcion + "',NULL,NULL,NULL,'"+finicio+"','"+ffin+"',NULL,NULL,NULL)";
+                sql += " SELECT gui, nombre, fecha ";
+                sql += " WHERE gui <> " + gui;
+
+                if (connect.State != ConnectionState.Open)
+                {
+                    connect.Open();
+                }
+                MySqlCommand cmd = new MySqlCommand(sql, connect);
+                cmd.ExecuteNonQuery();
+                connect.Close();
+
+            }
+            catch (Exception ex)
+            {
+                ex.ToString();
+
+            }
+        }
+
+        private void Project()
+        {
+            int j = 1;
+
+            using (ProjectCont1)
+            {
+
+                DateTime dia = DateTime.Today.AddDays(0);
+                DateTime hoy = DateTime.Today;
+                DateTime ayer = hoy.AddDays(0);
+
+                // 1. Retrieve the project, tasks, etc.
+                var projCollection = ProjectCont1.LoadQuery(ProjectCont1.Projects
+                    .Where(p => p.CreatedDate >= ayer)
+                    .Include(
+                        p => p.Id,
+                        p => p.Name,
+                        p => p.Tasks,
+                        p => p.Tasks.Include(
+                            t => t.Id,
+                            t => t.Name,
+                            t => t.CustomFields,
+                            t => t.CustomFields.IncludeWithDefaultProperties(
+                                cf => cf.LookupTable,
+                                cf => cf.LookupEntries
+                            )
+                        )
+                    )
+                );
+
+
+                ProjectCont1.ExecuteQuery();
+
+
+                PublishedProject theProj = projCollection.First();
+                Console.WriteLine("Name:\t{0}", theProj.Name);
+                Console.WriteLine("Id:\t{0}", theProj.Id);
+               //Console.WriteLine("Tasks count: {0}", theProj.Tasks.Count);
+                Console.WriteLine("  -----------------------------------------------------------------------------");
+
+
+                PublishedTaskCollection taskColl = theProj.Tasks;
+                PublishedTask theTask = taskColl.First();
+                CustomFieldCollection LCFColl = theTask.CustomFields;
+                Dictionary<string, object> taskCF_Dict = theTask.FieldValues;
+
+                foreach (CustomField cf in LCFColl)
+                {
+                    String textValue = taskCF_Dict[cf.InternalName].ToString();
+                    Console.WriteLine("", cf.FieldType, cf.Name, textValue);
+                    var cia = cf.LookupTable.Entries.Where(e => e.InternalName == "Instituciones del Estado");
+                    ProjectCont1.ExecuteQuery();
+                    var a = cia.First().FullValue;
+                    var b = cia.First().Description;  
+                }
+
+
+
+                foreach (PublishedProject pubProj in projCollection)
+                {
+
+                    //
+            
+
+                        //
+
+
+                        string Guid = pubProj.Id.ToString();
+                    //Lista de Proyectos del lado de Project para insertar
+                    project_New = new List<string>();
+                    project_New.Add(Guid);//Project_id IdDelProyecto
+                    project_New.Add(pubProj.Name);//name NombreDeProyecto
+                    project_New.Add(pubProj.Description);//description DescripciónDelProyecto
+        
+                   
+
+                    //grouper AgrupadordeProyecto
+                    //compromise Compromiso      No va el campo              
+                    project_New.Add(pubProj.StartDate.ToShortDateString());//start_date ComienzoAnticipadoDelProyecto
+                    project_New.Add(pubProj.FinishDate.ToShortDateString());//end_date FechaDeFinalizaciónDelProyecto
+                    //institution InstitucióndelEstado
+                    //action_line LíneadeAcción
+                    //responsable SeguimientodeProyecto
+                    project_New.Add(pubProj.CreatedDate.ToShortDateString());
+
+                 
+
+                    //lista de GUI del lado de Project para comparar y borrar
+                    ssec_gui = new List<string>();
+                    ssec_gui.Add(Guid);
+
+                    Console.WriteLine("\n{0}. {1}   {2} \t{3} \n", j++, pubProj.Id, pubProj.Name, pubProj.CreatedDate);
+                    //intento de comparar dos matrices multidimencionales //comparar dos listas y buscar las diferencas
+                    //var project = new List<string> { Guid + "," + pubProj.Name + "," + pubProj.CreatedDate };
+                    //var projectGUI = new List<string> { Guid };
+                    //var ssec = new List<string> { "datos del Mysql "};
+                    //var projectFaltan = projectGUI.Except(ssec.ToList()); //list3 contains only 1, 2
+
+                }
+            }
+
+
+
+
+            insertProject();
+        }
+
+        private void DeleteProject()
+        {
+                       
+            try
+            {
+
+                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+                connect = new MySqlConnection(connectionString);
+
+                if (connect.State != ConnectionState.Open) { connect.Open(); }
+
+                var projectFaltan = project_gui.Except(ssec_gui.ToList());
+
+                foreach (string gui in projectFaltan)
+                {
+                    string sql = " Update projects ";
+                    sql += " WHERE gui =" + gui;
+                    MySqlCommand cmd = new MySqlCommand(sql, connect);
+                    cmd.ExecuteNonQuery();
+                }
+
+                connect.Close();
+
+
+            }
+            catch (Exception ex)
+            {
+                ex.ToString();
+
+            }
+        }
     }
 }
