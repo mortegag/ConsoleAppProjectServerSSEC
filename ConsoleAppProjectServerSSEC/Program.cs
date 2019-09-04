@@ -23,7 +23,7 @@ namespace ConsoleAppProjectServerSSEC
 
     class Program
     {
-
+        const int PROJECT_BLOCK_SIZE = 20;
         string Resultados = "";
         string rutas = "";
         string ps = "";
@@ -50,6 +50,8 @@ namespace ConsoleAppProjectServerSSEC
         string exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
         Timer tmrExecutor = new Timer();
 
+  
+
         /*
         listado dep Proyectos nuevos del lado de Project Online de los 
         @project_New para insertar proyectos a MySql
@@ -67,7 +69,6 @@ namespace ConsoleAppProjectServerSSEC
         {
 
             Program p = new Program();
-
             try
             {
                 MySqlConnection connect = new MySqlConnection();
@@ -101,9 +102,7 @@ namespace ConsoleAppProjectServerSSEC
                 }
 
                  p.conn();
-                // p.leerbd();
-                p.Project();
-                p.insertProject();
+                 p.Project();
 
 
             }
@@ -204,7 +203,7 @@ namespace ConsoleAppProjectServerSSEC
                             ssec_gui.Add(row[0].ToString());
                             string mensaje ="Project Name :"+row[5].ToString()+", start date : " + row[1].ToString()+", end_date : "+ row[2].ToString()+", % progress : "+ Convert.ToInt16(row[3])+"";
                             Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
-                            escribir_log(mensaje,"se ctualizaron estos registro en Project Online desde Mysql");
+                            escribir_log(mensaje,"se actualizaron estos registro en Project Online desde Mysql");
 
                         }
 
@@ -273,10 +272,11 @@ namespace ConsoleAppProjectServerSSEC
                 var tareas = draft2Edit.Tasks;
                 foreach (DraftTask tsk in tareas)
                 {
-                    tsk.Start = Convert.ToDateTime(fi);
-                    tsk.Finish = Convert.ToDateTime(ff);
+                    //tsk.Start = Convert.ToDateTime(fi);
+                    //tsk.Finish = Convert.ToDateTime(ff);
                     //tsk.Duration = duracion;
                     tsk.PercentComplete = porcent;
+                    
                 }
 
                 draft2Edit.Publish(true);
@@ -294,46 +294,16 @@ namespace ConsoleAppProjectServerSSEC
             }
         }
 
-        private void insertProject()
+        private void insertProject(string project_id, string name, string description, string grouper , string compromise, DateTime start_date, DateTime end_date, string institution, string action_line , string responsable  )
         {
-
-
-            /*
-                     project_New.Add(Guid);//Project_id IdDelProyecto
-                    project_New.Add(pubProj.Name);//name NombreDeProyecto
-                    project_New.Add(pubProj.Description);//description DescripciónDelProyecto
-                  
-                    //grouper AgrupadordeProyecto
-                    //compromise Compromiso      No va el campo              
-                    project_New.Add(pubProj.StartDate.ToShortDateString());//start_date ComienzoAnticipadoDelProyecto
-                    project_New.Add(pubProj.FinishDate.ToShortDateString());//end_date FechaDeFinalizaciónDelProyecto
-                    //institution InstitucióndelEstado
-                    //action_line LíneadeAcción
-                    //responsable SeguimientodeProyecto
-                    project_New.Add(pubProj.CreatedDate.ToShortDateString());
-             INSERT INTO `AIGDB_SSEC`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, 
-             `start_date`, `end_date`, `institution`, `action_line`, `responsable`
-             */
-
             try
             {
-
-              
                 string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
                 connect = new MySqlConnection(connectionString);
-                var gui = project_New[0];
-                var nombre = project_New[1];
-                var descripcion = project_New[2];
-                var finicio = project_New[3];
-                var ffin = project_New[4];
-                var fcreacion = project_New[5];
-
-
-
-                string sql = " INSERT INTO `AIGDB_SSEC`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`) VALUES ('" + gui + "','" + nombre + "','" + descripcion + "',NULL,NULL,NULL,'"+finicio+"','"+ffin+"',NULL,NULL,NULL)";
-                sql += " SELECT gui, nombre, fecha ";
-                sql += " WHERE gui <> " + gui;
-
+                string sql = "INSERT INTO `AIGDB_SSEC`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`) "; 
+                      sql += " VALUES ('" + project_id + "','" + name + "','" + description + "','"+grouper+"','"+compromise+"','"+start_date+"','"+end_date+"','"+institution+"','"+action_line+"','"+responsable+"');";
+              //  sql += " SELECT gui from `AIGDB_SSEC`.`projects` ";
+              //  sql += " WHERE gui <> " + project_id;
                 if (connect.State != ConnectionState.Open)
                 {
                     connect.Open();
@@ -341,120 +311,125 @@ namespace ConsoleAppProjectServerSSEC
                 MySqlCommand cmd = new MySqlCommand(sql, connect);
                 cmd.ExecuteNonQuery();
                 connect.Close();
-
             }
             catch (Exception ex)
             {
-                ex.ToString();
+                string mensaje = ex.ToString();
+                escribir_log("Hubo un error al tratar de Insertar registros : ", mensaje);
+              
 
             }
         }
 
         private void Project()
         {
-            int j = 1;
-
             using (ProjectCont1)
             {
 
-                DateTime dia = DateTime.Today.AddDays(0);
-                DateTime hoy = DateTime.Today;
-                DateTime ayer = hoy.AddDays(0);
+                //************************************
+                ProjectCont1.Load(ProjectCont1.Projects, qp => qp.Include(qr => qr.Id));
+                ProjectCont1.ExecuteQuery();
+                var allIds = ProjectCont1.Projects.Select(p => p.Id).ToArray();
+                int numBlocks = allIds.Length / PROJECT_BLOCK_SIZE + 1;
+                for (int i = 0; i < numBlocks; i++)
+                {
+                    var idBlock = allIds.Skip(i * PROJECT_BLOCK_SIZE).Take(PROJECT_BLOCK_SIZE);
+                    Guid[] block = new Guid[PROJECT_BLOCK_SIZE];
+                    Array.Copy(idBlock.ToArray(), block, idBlock.Count());
+                    DateTime hoy = DateTime.Today;
+                    DateTime ayer = hoy.AddDays(-10);
+                    string last = ayer.ToShortDateString();
 
-                // 1. Retrieve the project, tasks, etc.
-                var projCollection = ProjectCont1.LoadQuery(ProjectCont1.Projects
-                    .Where(p => p.CreatedDate >= ayer)
-                    .Include(
-                        p => p.Id,
-                        p => p.Name,
-                        p => p.Tasks,
-                        p => p.Tasks.Include(
-                            t => t.Id,
-                            t => t.Name,
-                            t => t.CustomFields,
-                            t => t.CustomFields.IncludeWithDefaultProperties(
-                                cf => cf.LookupTable,
-                                cf => cf.LookupEntries
+                    var projBlk = ProjectCont1.LoadQuery(
+                         ProjectCont1.Projects
+                        .Where(p =>
+                            p.Id == block[0] || p.Id == block[1] ||
+                            p.Id == block[2] || p.Id == block[3] ||
+                            p.Id == block[4] || p.Id == block[5] ||
+                            p.Id == block[6] || p.Id == block[7] ||
+                            p.Id == block[8] || p.Id == block[9] ||
+                            p.Id == block[10] || p.Id == block[11] ||
+                            p.Id == block[12] || p.Id == block[13] ||
+                            p.Id == block[14] || p.Id == block[15] ||
+                            p.Id == block[16] || p.Id == block[17] ||
+                            p.Id == block[18] || p.Id == block[19]
+                        )
+                        .Include(p => p.Id,
+                            p => p.Name,
+                            p => p.Description,
+                            p => p.StartDate,
+                            p => p.FinishDate,
+                            p => p.CreatedDate,
+                            p => p.IncludeCustomFields,
+                            p => p.IncludeCustomFields.CustomFields,
+                            P => P.IncludeCustomFields.CustomFields.IncludeWithDefaultProperties(
+                                lu => lu.LookupTable,
+                                lu => lu.LookupEntries
                             )
                         )
-                    )
-                );
+                    );
 
-
-                ProjectCont1.ExecuteQuery();
-
-
-                PublishedProject theProj = projCollection.First();
-                Console.WriteLine("Name:\t{0}", theProj.Name);
-                Console.WriteLine("Id:\t{0}", theProj.Id);
-               //Console.WriteLine("Tasks count: {0}", theProj.Tasks.Count);
-                Console.WriteLine("  -----------------------------------------------------------------------------");
-
-
-                PublishedTaskCollection taskColl = theProj.Tasks;
-                PublishedTask theTask = taskColl.First();
-                CustomFieldCollection LCFColl = theTask.CustomFields;
-                Dictionary<string, object> taskCF_Dict = theTask.FieldValues;
-
-                foreach (CustomField cf in LCFColl)
-                {
-                    String textValue = taskCF_Dict[cf.InternalName].ToString();
-                    Console.WriteLine("", cf.FieldType, cf.Name, textValue);
-                    var cia = cf.LookupTable.Entries.Where(e => e.InternalName == "Instituciones del Estado");
                     ProjectCont1.ExecuteQuery();
-                    var a = cia.First().FullValue;
-                    var b = cia.First().Description;  
-                }
 
+                    foreach (PublishedProject pubProj in projBlk)
+                    {
 
-
-                foreach (PublishedProject pubProj in projCollection)
-                {
-
-                    //
-            
-
+                        DateTime fechaP = Convert.ToDateTime(pubProj.CreatedDate.ToShortDateString());
+                        DateTime fechaA = Convert.ToDateTime(ayer.ToShortDateString());
                         //
+                        string project_id = pubProj.Id.ToString();
+                        string name = pubProj.Name;
+                        string description = pubProj.Description;
+                        DateTime start_date = pubProj.StartDate;
+                        DateTime end_date = pubProj.FinishDate;
+                        string grouper = "";
+                        string compromise = "";
+                        string institution = "";
+                        string action_line = "";
+                        string responsable = "";
 
 
-                        string Guid = pubProj.Id.ToString();
-                    //Lista de Proyectos del lado de Project para insertar
-                    project_New = new List<string>();
-                    project_New.Add(Guid);//Project_id IdDelProyecto
-                    project_New.Add(pubProj.Name);//name NombreDeProyecto
-                    project_New.Add(pubProj.Description);//description DescripciónDelProyecto
-        
-                   
+                        if (fechaP >= fechaA)
+                        {
 
-                    //grouper AgrupadordeProyecto
-                    //compromise Compromiso      No va el campo              
-                    project_New.Add(pubProj.StartDate.ToShortDateString());//start_date ComienzoAnticipadoDelProyecto
-                    project_New.Add(pubProj.FinishDate.ToShortDateString());//end_date FechaDeFinalizaciónDelProyecto
-                    //institution InstitucióndelEstado
-                    //action_line LíneadeAcción
-                    //responsable SeguimientodeProyecto
-                    project_New.Add(pubProj.CreatedDate.ToShortDateString());
+                            var projECFs = pubProj.IncludeCustomFields.CustomFields;
+                            Dictionary<string, object> ECFValues = pubProj.IncludeCustomFields.FieldValues;
+                            //valores nativos
+               
 
-                 
+                            int j = 0;
+                            foreach (CustomField cf in projECFs)
+                            {
+                                j++;
 
-                    //lista de GUI del lado de Project para comparar y borrar
-                    ssec_gui = new List<string>();
-                    ssec_gui.Add(Guid);
+                                String[] entries = (String[])ECFValues[cf.InternalName];
 
-                    Console.WriteLine("\n{0}. {1}   {2} \t{3} \n", j++, pubProj.Id, pubProj.Name, pubProj.CreatedDate);
-                    //intento de comparar dos matrices multidimencionales //comparar dos listas y buscar las diferencas
-                    //var project = new List<string> { Guid + "," + pubProj.Name + "," + pubProj.CreatedDate };
-                    //var projectGUI = new List<string> { Guid };
-                    //var ssec = new List<string> { "datos del Mysql "};
-                    //var projectFaltan = projectGUI.Except(ssec.ToList()); //list3 contains only 1, 2
+                                foreach (String entry in entries)
+                                {                                
+                                    var luEntry = ProjectCont1.LoadQuery(cf.LookupTable.Entries
+                                        .Where(e => e.InternalName == entry));
 
+                                    ProjectCont1.ExecuteQuery();
+
+                                    if (j == 1) { grouper = luEntry.First().FullValue; Console.WriteLine(" {0} {1, -22}  ", j, luEntry.First().FullValue); }
+                                    else if (j == 3) { compromise = luEntry.First().FullValue; Console.WriteLine("{0} {1, -22}", j, luEntry.First().FullValue); }
+                                    else if (j == 6) { institution = luEntry.First().FullValue; Console.WriteLine("{0} {1, -22}", j, luEntry.First().FullValue); }
+                                    else if (j == 7) { action_line = luEntry.First().FullValue; Console.WriteLine("{0} {1, -22}", j, luEntry.First().FullValue); }
+                                    else if (j == 9) { responsable = luEntry.First().FullValue; Console.WriteLine("{0} {1, -22}", j, luEntry.First().FullValue); }
+                                    
+                                }
+                              
+                            }
+                            string mensaje = " GUI : " + project_id + " NOMBRE : " + name + " DESCRIPCION : " + description + " GRUPO :" + grouper + " COMPROMISO " + compromise + " DIA INICIO :" + start_date + " DIA FIN :" + end_date + " INSTITUCION : " + institution + " LINEA ACCION :" + action_line + " REPONSABLE :" + responsable + "";
+                            insertProject(project_id, name, description, grouper, compromise, start_date, end_date, institution, action_line, responsable);
+                            escribir_log(mensaje, "se insertaron estos registros desde Project Online a Mysql");
+                        }
+                    }
                 }
             }
 
-
-
-
-            insertProject();
+            Console.Write("\nPress any key to exit: ");
+            Console.ReadKey(false);
         }
 
         private void DeleteProject()
