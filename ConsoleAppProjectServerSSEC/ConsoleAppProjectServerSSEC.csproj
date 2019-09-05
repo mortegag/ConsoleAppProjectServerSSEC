@@ -89,10 +89,10 @@
       <HintPath>..\packages\Microsoft.SharePointOnline.CSOM.16.1.9119.1200\lib\net45\Microsoft.Online.SharePoint.Client.Tenant.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.ProjectServer.Client, Version=16.1.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SharePointOnline.CSOM.16.1.9119.1200\lib\net45\Microsoft.ProjectServer.Client.dll</HintPath>
+      <HintPath>..\..\Project_online\Project_online\bin\Debug\Microsoft.ProjectServer.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.SharePoint.Client, Version=16.1.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SharePointOnline.CSOM.16.1.9119.1200\lib\net45\Microsoft.SharePoint.Client.dll</HintPath>
+      <HintPath>..\..\Project_online\Project_online\bin\Debug\Microsoft.SharePoint.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.SharePoint.Client.DocumentManagement, Version=16.1.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.SharePointOnline.CSOM.16.1.9119.1200\lib\net45\Microsoft.SharePoint.Client.DocumentManagement.dll</HintPath>
@@ -122,7 +122,7 @@
       <HintPath>..\packages\Microsoft.SharePointOnline.CSOM.16.1.9119.1200\lib\net45\Microsoft.SharePoint.Client.WorkflowServices.dll</HintPath>
     </Reference>
     <Reference Include="MySql.Data">
-      <HintPath>..\..\..\..\Documents\SARH\RRHH\AccionesPersonal\AccionesPersonalWF\bin\MySql.Data.dll</HintPath>
+      <HintPath>..\..\Project_online\Project_online\bin\Debug\MySql.Data.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

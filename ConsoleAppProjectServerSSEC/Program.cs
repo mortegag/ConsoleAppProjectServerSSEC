@@ -17,25 +17,14 @@ using System.Net.Mail;
 
 namespace ConsoleAppProjectServerSSEC
 {
- 
-
-
-
     class Program
     {
         const int PROJECT_BLOCK_SIZE = 20;
-        string Resultados = "";
-        string rutas = "";
-        string ps = "";
-        string hora1 = "";
-        string hora2 = "";
         string log = "";
         string ip = "";
         string user = "";
         string passw = "";
         string db = "";
-        String ID = "";
-        string csv = "";
         string intervalos = "";
         string smtpserver = "";
         string de = "";
@@ -49,9 +38,7 @@ namespace ConsoleAppProjectServerSSEC
         MySqlConnection connect = new MySqlConnection();
         string exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
         Timer tmrExecutor = new Timer();
-
-  
-
+        
         /*
         listado dep Proyectos nuevos del lado de Project Online de los 
         @project_New para insertar proyectos a MySql
@@ -99,6 +86,8 @@ namespace ConsoleAppProjectServerSSEC
                     p.credencial = row.SelectSingleNode("//credencial").InnerText;
                     p.envioemail = row.SelectSingleNode("//envioemail").InnerText;
                     p.para = row.SelectSingleNode("//para").InnerText;
+                    //incluir parametros para actualizar , insertar o borrar 
+
                 }
 
                  p.conn();
@@ -123,20 +112,12 @@ namespace ConsoleAppProjectServerSSEC
              
             }
 
-        }
-
-        private void escribir_error() {
-
-
-
-        }
-
+        }        
         /// <sumary>
         /// Funcion que permite escribir en un archivo tipo texto las transacciones realizadas por la aplicacion 
         /// </summary>
         /// <param name="mensaje"> son los datos procesados </param>
         /// <param name="tipo"> tipo de datos procesados insert, delete , update</param>
-        /// 
         private void escribir_log( string mensaje , string tipo) {
 
           
@@ -149,7 +130,9 @@ namespace ConsoleAppProjectServerSSEC
 
 
         }
-         
+        /// <sumary>
+        /// Funcion que permite conectarse a Project Server por medio de parametros de un archivo XML 
+        /// </summary>
         private void conn()
         {
 
@@ -162,8 +145,11 @@ namespace ConsoleAppProjectServerSSEC
             ProjectCont1.Credentials = new SharePointOnlineCredentials(userName, securePassword);
             Console.WriteLine("Se conecto a Project Server ");
         }
-
-        private void leerbd()
+        /// <sumary>
+        /// Funcion que permite leer los registros de la base de datos de MYSQL para actualizar
+        /// los campos nativos de Project Server 
+        /// </summary>
+        private void MysqltoProject()
         {
 
             try
@@ -219,7 +205,10 @@ namespace ConsoleAppProjectServerSSEC
 
             }
         }
-
+        /// <sumary>
+        /// Funcion que permite enviar un correo con  el archivo adjunto logProject.txt a uno o mas destinatarios ,
+        /// se paramertiza en el archivo XML  , esta funcion llama a la funcion  UddateTask
+        /// </summary>
         public void enviarCorreo()
         {
             try
@@ -246,12 +235,13 @@ namespace ConsoleAppProjectServerSSEC
             }
 
         }
-
-        private void detener()
-        {
-            tmrExecutor.Enabled = false;
-        }
-
+        /// <sumary>
+        /// Funcion que permite actualizar las tareas en Project Server  
+        /// </summary>
+        /// <param gui="String">Identificar Grafico Unico de proyecto de Project Server </param>
+        /// <param fi="Date"> Fecha Inicial de Tarea</param>
+        /// <param ff="Date"> Fecha Final de Tarea</param>
+        /// <param porcent="Int"> Valor numerico de porcentaje de progreso de la tarea</param>
         private void UddateTask(string gui, string fi, string ff, int porcent)
         {
 
@@ -293,7 +283,12 @@ namespace ConsoleAppProjectServerSSEC
 
             }
         }
-
+        /// <sumary>
+        /// Funcion  que permite insertar un nuevo proyecto a la base de datos de MYSQL ,
+        /// verifica que previamente que no se duplique la informacion antes de insertarla
+        /// </summary>
+        /// <param project_id="String">Identificar Grafico Unico de proyecto del lado de MYSQL </param>
+        /// 
         private void insertProject(string project_id, string name, string description, string grouper , string compromise, DateTime start_date, DateTime end_date, string institution, string action_line , string responsable  )
         {
             try
@@ -302,26 +297,45 @@ namespace ConsoleAppProjectServerSSEC
                 connect = new MySqlConnection(connectionString);
                 string sql = "INSERT INTO `AIGDB_SSEC`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`) "; 
                       sql += " VALUES ('" + project_id + "','" + name + "','" + description + "','"+grouper+"','"+compromise+"','"+start_date+"','"+end_date+"','"+institution+"','"+action_line+"','"+responsable+"');";
-              //  sql += " SELECT gui from `AIGDB_SSEC`.`projects` ";
-              //  sql += " WHERE gui <> " + project_id;
-                if (connect.State != ConnectionState.Open)
-                {
-                    connect.Open();
-                }
+
+                if (Existe(project_id)!=true){
+                if (connect.State != ConnectionState.Open){connect.Open();}
                 MySqlCommand cmd = new MySqlCommand(sql, connect);
                 cmd.ExecuteNonQuery();
                 connect.Close();
+                }
             }
             catch (Exception ex)
             {
                 string mensaje = ex.ToString();
-                escribir_log("Hubo un error al tratar de Insertar registros : ", mensaje);
-              
+                escribir_log("Hubo un error al tratar de Insertar registros : ", mensaje);              
 
             }
         }
-
-        private void Project()
+        /// <sumary>
+        /// Funcion que permite la verificacion para NO insertar un nuevo proyecto existente 
+        /// </summary>
+        /// <param gui="String">Identificar Grafico Unico de proyecto de Project Server </param>
+        private bool Existe(string GUI)
+        {
+            string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+            connect = new MySqlConnection(connectionString);
+            string sql = " SELECT count(*) FROM aigdb_ssec.projects WHERE project_id=@gui";
+            MySqlCommand cmd = new MySqlCommand(sql, connect);
+            cmd.Parameters.AddWithValue("Id", GUI);
+                if (connect.State != ConnectionState.Open) { connect.Open(); }
+                int count = Convert.ToInt32(cmd.ExecuteScalar());
+                if (count == 0)
+                    return false;
+                else
+                    return true;            
+        }
+        /// <sumary>
+        /// Funcion que permite listar todos los campos de Project Server tanto los nativos como los personalizados
+        /// con el objetivo de insertar todos los proyectos NUEVOS en la base de datos de MYSQL
+        /// utiliza la funcion insertProject para insertar el nuevo proyecto.
+        /// </summary>
+        private void CamposPersonalizadosProject()
         {
             using (ProjectCont1)
             {
@@ -431,31 +445,23 @@ namespace ConsoleAppProjectServerSSEC
             Console.Write("\nPress any key to exit: ");
             Console.ReadKey(false);
         }
-
+                     
         private void DeleteProject()
-        {
-                       
+        {                       
             try
             {
-
                 string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
                 connect = new MySqlConnection(connectionString);
-
                 if (connect.State != ConnectionState.Open) { connect.Open(); }
-
                 var projectFaltan = project_gui.Except(ssec_gui.ToList());
-
                 foreach (string gui in projectFaltan)
                 {
-                    string sql = " Update projects ";
-                    sql += " WHERE gui =" + gui;
-                    MySqlCommand cmd = new MySqlCommand(sql, connect);
-                    cmd.ExecuteNonQuery();
+                    string sql = " Update projects "; //no se borra o elinmina sino que se actualiza el campo 
+                    sql += " WHERE gui =" + gui; // se debe hace un barrido de todos los proyectos de Project Server
+                    MySqlCommand cmd = new MySqlCommand(sql, connect); // para asegurarse de desactivar correctamente
+                    cmd.ExecuteNonQuery(); // por el tema de que los procesos son por rango de fecha
                 }
-
                 connect.Close();
-
-
             }
             catch (Exception ex)
             {
