@@ -34,6 +34,10 @@ namespace ConsoleAppProjectServerSSEC
         string pwaPath = "";
         string userName = "";
         string passWord = "";
+        string insertar = "";
+        string actualizar = "";
+        string dias_i = "";
+        string dias_a ="";
         static csom.ProjectContext ProjectCont1;
         MySqlConnection connect = new MySqlConnection();
         string exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
@@ -87,11 +91,18 @@ namespace ConsoleAppProjectServerSSEC
                     p.envioemail = row.SelectSingleNode("//envioemail").InnerText;
                     p.para = row.SelectSingleNode("//para").InnerText;
                     //incluir parametros para actualizar , insertar o borrar 
+                    p.insertar = row.SelectSingleNode("//insert").InnerText;
+                    p.actualizar = row.SelectSingleNode("//update").InnerText;
+                    //parametros para cantidad de dias para transacciones 
+                    p.dias_i = row.SelectSingleNode("//rango_insert").InnerText;
+                    p.dias_a = row.SelectSingleNode("//rango_update").InnerText;
 
                 }
 
                  p.conn();
-                 p.Project();
+                if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
+                if (p.actualizar =="Si") { p.MysqltoProject(); }
+                
 
 
             }
@@ -159,11 +170,11 @@ namespace ConsoleAppProjectServerSSEC
                 connect = new MySqlConnection(connectionString);
 
                 //(string gui, string fi, string ff, string duracion, int porcent)
-                string sql = "SELECT project_id, start_date, end_date,progress,updated_at, name  from projects";
-                sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
-                sql += " OR updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL 6 DAY), '%Y-%m-%d')";
+                string sql = "SELECT project_id, start_date, end_date,progress,updated_at, name  from aigdb_ssec.projects";
+                sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL "+dias_a+" DAY), '%Y-%m-%d')";
+                sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL "+dias_a+" DAY), '%Y-%m-%d')";
+                sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL "+dias_a+" DAY), '%Y-%m-%d')";
+                sql += " OR updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL "+dias_a+" DAY), '%Y-%m-%d')";
                 sql += " ORDER BY id";
 
 
@@ -320,10 +331,11 @@ namespace ConsoleAppProjectServerSSEC
         {
             string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
             connect = new MySqlConnection(connectionString);
-            string sql = " SELECT count(*) FROM aigdb_ssec.projects WHERE project_id=@gui";
+            string sql = " SELECT count(*) FROM aigdb_ssec.projects WHERE project_id='"+GUI+"';" ;
             MySqlCommand cmd = new MySqlCommand(sql, connect);
-            cmd.Parameters.AddWithValue("Id", GUI);
-                if (connect.State != ConnectionState.Open) { connect.Open(); }
+            //cmd.Parameters.AddWithValue("Id", GUI);
+            cmd.Parameters.Add("Id", GUI);
+            if (connect.State != ConnectionState.Open) { connect.Open(); }
                 int count = Convert.ToInt32(cmd.ExecuteScalar());
                 if (count == 0)
                     return false;
@@ -351,7 +363,7 @@ namespace ConsoleAppProjectServerSSEC
                     Guid[] block = new Guid[PROJECT_BLOCK_SIZE];
                     Array.Copy(idBlock.ToArray(), block, idBlock.Count());
                     DateTime hoy = DateTime.Today;
-                    DateTime ayer = hoy.AddDays(-10);
+                    DateTime ayer = hoy.AddDays(Convert.ToInt32(dias_i));
                     string last = ayer.ToShortDateString();
 
                     var projBlk = ProjectCont1.LoadQuery(

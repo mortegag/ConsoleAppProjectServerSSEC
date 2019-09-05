@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<parameters>
+ <SoftwareToInstallPaths>
+	<!--intervalo de tiempo en que se ejecutara el Servicio--> 
+    <interval>5000</interval>
+	<!-- Ruta de bitacora de eventos ejecutados-->
+    <Logs>c:\Temp\</Logs>
+	<!-- datos de coneccion al servidor MYSql-->
+    <ip>localhost</ip>	
+    <user>root</user>
+    <passw></passw>
+	<db>aigdb_ssec</db>
+    <!--Datos de Conexion de Project Server-->
+	<pwaPath>https://aigpanama.sharepoint.com/sites/Proyectos-TI</pwaPath>
+	<userName>mortega@innovacion.gob.pa</userName>
+	<passWord>Coco.1961</passWord>
+	 <!--Datos de conexxion y envio de correos de Warning-->
+	<smtpserver>10.252.76.40</smtpserver>
+    <de>no-reply-loquesea@innovacion.gob.pa</de>
+    <credencial>contraseña</credencial>
+    <envioemail>si</envioemail>
+    <para>usuario@innovacion.gob.pa</para>
+	 <!--parametro para actualizar o insertar, se valida con Si o No -->
+	 <insert>Si</insert>
+	 <update>Si</update>
+	 <!--Parametro cantidad dias-rango a partir de hoy para proceso insert o update, se vailida con enteros negativos-->
+	 <rango_insert>-5</rango_insert>
+	 <rango_update>-5</rango_update>	 
+    </SoftwareToInstallPaths>
+</parameters> 
