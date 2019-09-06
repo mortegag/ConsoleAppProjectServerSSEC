@@ -124,7 +124,7 @@ namespace ConsoleAppProjectServerSSEC
                 }
 
 
-                if (p.passWord == "")
+                if (p.passWord == "") //Contraseña de Project Server
                 {
                     Console.Write("Introdusca su clave para ProjectServerOnline : ");
                     Console.ForegroundColor = ConsoleColor.Black;
@@ -135,16 +135,46 @@ namespace ConsoleAppProjectServerSSEC
                     node.InnerText = Seguridad.Encriptar(p.passWord);
                     xmlDoc.Save(filepath);
                     //
+ 
                 }
-                else {
+                else { p.passWord = Seguridad.DesEncriptar(p.passWord);}
 
-                    p.passWord = Seguridad.DesEncriptar(p.passWord); 
+                if (p.passw == "") //Contraseña de Base de Datos
+                {
+
+                    Console.Write("Introdusca password BD MySql : ");
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    p.passw = Console.ReadLine();
+                    Console.ForegroundColor = ConsoleColor.White;
+                    //
+                    XmlNode node1 = xmlDoc.SelectSingleNode("parameters/SoftwareToInstallPaths/passw");
+                    node1.InnerText = Seguridad.Encriptar(p.passw);
+                    xmlDoc.Save(filepath);
+                    //
                 }
+                else { p.passw = Seguridad.DesEncriptar(p.passw); }
 
+
+                if (p.credencial == "") //Contraseña de SMTP
+                {
+
+                    Console.Write("Introdusca password SMTP : ");
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    p.credencial = Console.ReadLine();
+                    Console.ForegroundColor = ConsoleColor.White;
+                    //
+                    XmlNode node = xmlDoc.SelectSingleNode("parameters/SoftwareToInstallPaths/credencial");
+                    node.InnerText = Seguridad.Encriptar(p.credencial);
+                    xmlDoc.Save(filepath);
+                    //
+                }
+                else { p.credencial = Seguridad.DesEncriptar(p.credencial); }
+                               
                 p.conn();
+
                 if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
                 if (p.actualizar == "Si") { p.MysqltoProject(); }
-
+                if (p.envioemail == "Si") { p.enviarCorreo(); }
 
 
             }
