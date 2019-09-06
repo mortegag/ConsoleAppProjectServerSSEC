@@ -16,6 +16,30 @@ using System.Net.Mail;
 
 namespace ConsoleAppProjectServerSSEC
 {
+
+    public static class Seguridad
+    {
+        /// Encripta una cadena
+        public static string Encriptar(this string _cadenaAencriptar)
+        {
+            string result = string.Empty;
+            byte[] encryted = System.Text.Encoding.Unicode.GetBytes(_cadenaAencriptar);
+            result = Convert.ToBase64String(encryted);
+            return result;
+        }
+        /// Esta función desencripta la cadena que le envíamos en el parámentro de entrada.
+        public static string DesEncriptar(this string _cadenaAdesencriptar)
+        {
+            string result = string.Empty;
+            byte[] decryted = Convert.FromBase64String(_cadenaAdesencriptar);
+            //result = System.Text.Encoding.Unicode.GetString(decryted, 0, decryted.ToArray().Length);
+            result = System.Text.Encoding.Unicode.GetString(decryted);
+            return result;
+        }
+    }
+
+
+
     class Program
     {
         const int PROJECT_BLOCK_SIZE = 20;
@@ -99,6 +123,24 @@ namespace ConsoleAppProjectServerSSEC
 
                 }
 
+
+                if (p.passWord == "")
+                {
+                    Console.Write("Introdusca su clave para ProjectServerOnline : ");
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    p.passWord = Console.ReadLine();
+                    Console.ForegroundColor = ConsoleColor.White;
+                    //
+                    XmlNode node = xmlDoc.SelectSingleNode("parameters/SoftwareToInstallPaths/passWord");
+                    node.InnerText = Seguridad.Encriptar(p.passWord);
+                    xmlDoc.Save(filepath);
+                    //
+                }
+                else {
+
+                    p.passWord = Seguridad.DesEncriptar(p.passWord); 
+                }
+
                 p.conn();
                 if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
                 if (p.actualizar == "Si") { p.MysqltoProject(); }
@@ -124,6 +166,8 @@ namespace ConsoleAppProjectServerSSEC
             }
 
         }
+
+
         /// <sumary>
         /// Funcion que permite escribir en un archivo tipo texto las transacciones realizadas por la aplicacion 
         /// </summary>
