@@ -62,6 +62,7 @@ namespace ConsoleAppProjectServerSSEC
         string dias_i = "";
         string dias_a = "";
         string project_id;
+        string encriptar;
         static csom.ProjectContext ProjectCont1;
         MySqlConnection connect = new MySqlConnection();
         string exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
@@ -120,8 +121,11 @@ namespace ConsoleAppProjectServerSSEC
                     //parametros para cantidad de dias para transacciones 
                     p.dias_i = row.SelectSingleNode("//rango_insert").InnerText;
                     p.dias_a = row.SelectSingleNode("//rango_update").InnerText;
+              
+
 
                 }
+
 
 
                 if (p.passWord == "") //Contraseña de Project Server
@@ -132,13 +136,12 @@ namespace ConsoleAppProjectServerSSEC
                     Console.ForegroundColor = ConsoleColor.White;
                     //
                     XmlNode node = xmlDoc.SelectSingleNode("parameters/SoftwareToInstallPaths/passWord");
-                    node.InnerText = Seguridad.Encriptar(p.passWord);
+                    node.InnerText = Seguridad.Encriptar(p.passWord.Trim());
                     xmlDoc.Save(filepath);
                     //
- 
-                }
-                else { p.passWord = Seguridad.DesEncriptar(p.passWord);}
 
+                }
+       
                 if (p.passw == "") //Contraseña de Base de Datos
                 {
 
@@ -148,13 +151,11 @@ namespace ConsoleAppProjectServerSSEC
                     Console.ForegroundColor = ConsoleColor.White;
                     //
                     XmlNode node1 = xmlDoc.SelectSingleNode("parameters/SoftwareToInstallPaths/passw");
-                    node1.InnerText = Seguridad.Encriptar(p.passw);
+                    node1.InnerText = Seguridad.Encriptar(p.passw.Trim());
                     xmlDoc.Save(filepath);
                     //
                 }
-                else { p.passw = Seguridad.DesEncriptar(p.passw); }
-
-
+         
                 if (p.credencial == "") //Contraseña de SMTP
                 {
 
@@ -168,16 +169,18 @@ namespace ConsoleAppProjectServerSSEC
                     xmlDoc.Save(filepath);
                     //
                 }
-                else { p.credencial = Seguridad.DesEncriptar(p.credencial); }
-                               
+                p.passw = Seguridad.DesEncriptar(p.passw.Trim());
+                p.credencial = Seguridad.DesEncriptar(p.credencial.Trim()); 
+                p.passWord = Seguridad.DesEncriptar(p.passWord.Trim());
                 p.conn();
 
                 if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
                 if (p.actualizar == "Si") { p.MysqltoProject(); }
                 if (p.envioemail == "Si") { p.enviarCorreo(); }
-
-
             }
+
+
+
             catch (Exception ex)
             {
                 string error = ex.ToString();
@@ -245,7 +248,7 @@ namespace ConsoleAppProjectServerSSEC
                 connect = new MySqlConnection(connectionString);
 
                 //(string gui, string fi, string ff, string duracion, int porcent)
-                string sql = "SELECT project_id, start_date, end_date,progress,updated_at, name  from " + db + ".projects";
+                string sql = "SELECT project_id, start_date, end_date,progress_fin,updated_at, name  from " + db + ".projects";
                 sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
@@ -274,7 +277,7 @@ namespace ConsoleAppProjectServerSSEC
                             //Lista de GUI lado Mysql para Borrar
                             ssec_gui = new List<string>();
                             ssec_gui.Add(row[0].ToString());
-                            string mensaje = "Project Name :" + row[5].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
+                            string mensaje ="Project GUI :"+row[0] + "Project Name :" + row[5].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
                             Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
                             escribir_log(mensaje, "se actualizaron estos registro en Project Online desde Mysql");
 
@@ -290,7 +293,14 @@ namespace ConsoleAppProjectServerSSEC
             }
             catch (Exception ex)
             {
-                ex.ToString();
+                string error = ex.ToString();
+                string filePath = log + @"\error.txt";
+                using (StreamWriter writer = new StreamWriter(filePath, true))
+                {
+                    writer.WriteLine("Error :" + ex.Message + "<br/>" + Environment.NewLine + "StackTrace :" + ex.StackTrace +
+                       "" + Environment.NewLine + "Date :" + DateTime.Now.ToString());
+                    writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
+                }
 
             }
         }
@@ -352,12 +362,11 @@ namespace ConsoleAppProjectServerSSEC
 
                 foreach (DraftTask tsk in tareas)
                 {
-                    //tsk.Start = Convert.ToDateTime(fi);
-                    //tsk.Finish = Convert.ToDateTime(ff);
-                    //tsk.Duration = duracion;
+                    tsk.Start = Convert.ToDateTime(fi);
+                    tsk.Finish = Convert.ToDateTime(ff);
                     tsk.PercentComplete = porcent;
-                    double costo = tsk.Cost;
-
+                   //double costo = tsk.Cost;
+                    
                 }
 
                 draft2Edit.Publish(true);
