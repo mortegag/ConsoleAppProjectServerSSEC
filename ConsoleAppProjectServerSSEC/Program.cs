@@ -80,7 +80,10 @@ namespace ConsoleAppProjectServerSSEC
         /*Listado de indices GUI de proyectos del lado de Project Online
          */
         List<string> project_gui;
-
+        /// <sumary>
+        ///  Punto donde el programa inicia o inicia la Ejecucion , contiene la lectura inicial de el archivo XML parametrizables 
+        ///  o customizables por el usuario administrador de APP; Ademas de la encriptación de las contraseñas de base de datos y otros  
+        /// </summary>
         static void Main(string[] args)
         {
 
@@ -199,8 +202,6 @@ namespace ConsoleAppProjectServerSSEC
             }
 
         }
-
-
         /// <sumary>
         /// Funcion que permite escribir en un archivo tipo texto las transacciones realizadas por la aplicacion 
         /// </summary>
@@ -244,7 +245,7 @@ namespace ConsoleAppProjectServerSSEC
             try
             {
 
-                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
                 connect = new MySqlConnection(connectionString);
 
                 //(string gui, string fi, string ff, string duracion, int porcent)
@@ -253,6 +254,7 @@ namespace ConsoleAppProjectServerSSEC
                 sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " OR updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
+                sql += " and deleted_at is null";
                 sql += " ORDER BY id";
 
 
@@ -351,35 +353,40 @@ namespace ConsoleAppProjectServerSSEC
                  ProjectCont1.Projects
                    .Where(p => p.Id == ProjectGuid));
                 ProjectCont1.ExecuteQuery();
-                csom.PublishedProject proj2Edit = projCollection.First();
-                DraftProject draft2Edit = proj2Edit.CheckOut();
-                ProjectCont1.Load(draft2Edit);
-                ProjectCont1.Load(draft2Edit.Tasks);
-                ProjectCont1.ExecuteQuery();
-                //
-                var tareas = draft2Edit.Tasks;
 
-
-                foreach (DraftTask tsk in tareas)
-                {
-                    tsk.Start = Convert.ToDateTime(fi);
-                    tsk.Finish = Convert.ToDateTime(ff);
-                    tsk.PercentComplete = porcent;
-                   //double costo = tsk.Cost;
-                    
-                }
-
-                draft2Edit.Publish(true);
-                csom.QueueJob qJob = ProjectCont1.Projects.Update();
-                csom.JobState jobState = ProjectCont1.WaitForQueue(qJob, 200);
-                //
-                qJob = ProjectCont1.Projects.Update();
-                jobState = ProjectCont1.WaitForQueue(qJob, 20);
-
-                if (jobState == JobState.Success)
+                if (projCollection.Contains(null) is true)
                 {
 
+                    csom.PublishedProject proj2Edit = projCollection.First();
+                    DraftProject draft2Edit = proj2Edit.CheckOut();
+                    ProjectCont1.Load(draft2Edit);
+                    ProjectCont1.Load(draft2Edit.Tasks);
+                    ProjectCont1.ExecuteQuery();
+                    //
+                    var tareas = draft2Edit.Tasks;
+                    foreach (DraftTask tsk in tareas)
+                    {
+                        tsk.Start = Convert.ToDateTime(fi);
+                        tsk.Finish = Convert.ToDateTime(ff);
+                        tsk.PercentComplete = porcent;
+                        //double costo = tsk.Cost;
+
+                    }
+
+                    draft2Edit.Publish(true);
+                    csom.QueueJob qJob = ProjectCont1.Projects.Update();
+                    csom.JobState jobState = ProjectCont1.WaitForQueue(qJob, 200);
+                    //
+                    qJob = ProjectCont1.Projects.Update();
+                    jobState = ProjectCont1.WaitForQueue(qJob, 20);
+
+                    if (jobState == JobState.Success)
+                    {
+
+                    }
+
                 }
+                else { }
 
             }
         }
@@ -393,7 +400,7 @@ namespace ConsoleAppProjectServerSSEC
         {
             try
             {
-                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
                 connect = new MySqlConnection(connectionString);
                 string sql = "INSERT INTO `" + db + "`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`, `monto`,`ubicacion`) ";
                 sql += " VALUES ('" + project_id + "','" + name + "','" + description + "','" + grouper + "','" + compromise + "','" + start_date + "','" + end_date + "','" + institution + "','" + action_line + "','" + responsable + "'," + monto + ",'" + ubicacion + "');";
@@ -422,7 +429,7 @@ namespace ConsoleAppProjectServerSSEC
         /// <param gui="String">Identificar Grafico Unico de proyecto de Project Server </param>
         private bool Existe(string GUI)
         {
-            string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+            string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
             connect = new MySqlConnection(connectionString);
             string sql = " SELECT count(*) FROM aigdb_ssec.projects WHERE project_id='" + GUI + "';";
             MySqlCommand cmd = new MySqlCommand(sql, connect);
@@ -570,7 +577,7 @@ namespace ConsoleAppProjectServerSSEC
         {
             try
             {
-                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";";
+                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
                 connect = new MySqlConnection(connectionString);
                 if (connect.State != ConnectionState.Open) { connect.Open(); }
                 var projectFaltan = project_gui.Except(ssec_gui.ToList());
