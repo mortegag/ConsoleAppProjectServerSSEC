@@ -249,11 +249,8 @@ namespace ConsoleAppProjectServerSSEC
                 connect = new MySqlConnection(connectionString);
 
                 //(string gui, string fi, string ff, string duracion, int porcent)
-                string sql = "SELECT project_id, start_date, end_date,progress_fin  from " + db + ".projects";
+                string sql = "SELECT project_id, start_date, end_date,progress_fin,name  from " + db + ".projects";
                 sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
-                sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
-                sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
-                sql += " OR updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " and deleted_at is null";
                 sql += " ORDER BY id";
 
@@ -278,17 +275,17 @@ namespace ConsoleAppProjectServerSSEC
                             UddateTask(row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
                             //Lista de GUI lado Mysql para Borrar
                             if (coleccion_vacia == true)
-                            { mensaje = "El Project codigo GUI :" + row[0] + " no existe en el TENANT project server de Produccion"; }
+                            { mensaje = "El Project codigo GUI :" + row[0] + " no existe en el TENANT , y no se actualizo en el"; }
                             else
                             { 
                                // ssec_gui = new List<string>();
                                // ssec_gui.Add(row[0].ToString());
-                                mensaje ="Project GUI :"+row[0] + "Project Name :" + row[5].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
+                                mensaje ="Project GUI :"+row[0] + "Project Name :" + row[4].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
                                 Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
-                                escribir_log(mensaje, "se actualizaron estos registro en Project Online desde Mysql");
+                              
                             }
-                          
 
+                            escribir_log(mensaje, " Project Online desde Mysql");
                         }
 
                         if (dt.Rows.Count == 0) { escribir_log("El rango de dias del parametro 'rango_update' = " + dias_a + "   no encontro regitros para las transacciones  ", "modifique el parametro a menos dias para el proceso de actualizacion "); }
@@ -357,15 +354,40 @@ namespace ConsoleAppProjectServerSSEC
                 Guid ProjectGuid = new Guid(gui);
                 var projCollection = ProjectCont1.LoadQuery(
                  ProjectCont1.Projects
-                   .Where(p => p.Id == ProjectGuid));
+                   .Where(p => p.Id == ProjectGuid)
+                   .Include(p =>p.Id,
+                       p => p.IncludeCustomFields,
+                       p => p.IncludeCustomFields.CustomFields,
+                       P => P.IncludeCustomFields.CustomFields.IncludeWithDefaultProperties(
+                            lu => lu.LookupTable,
+                            lu => lu.LookupEntries
+                        )
+                      )
+                   );
                 ProjectCont1.ExecuteQuery();
 
-                if (projCollection.Contains(null) is true)
+                //Otro Intento
+                var projId = ProjectCont1.Projects.First(p => p.Name == "Your Project Name").Id;
+                var cfInternalName = ProjectCont1.CustomFields.First(cf => cf.Name == "NameOfTheField").InternalName;
+                object cfValue = "Some value"; // the value can be 'null' as well
+                var proj = ProjectCont1.Projects.GetByGuid(projId);
+                var draftProj = proj.CheckOut();
+                draftProj.SetCustomFieldValue(cfInternalName, cfValue);
+                var cfsX = proj.CustomFields;
+                draftProj.Publish(true);
+
+                //
+
+                if (projCollection!=null)
                 {
 
                     csom.PublishedProject proj2Edit = projCollection.First();
                     DraftProject draft2Edit = proj2Edit.CheckOut();
                     ProjectCont1.Load(draft2Edit);
+                    // Modificado por Moises para actualizar en TENANT 
+                  
+
+                    //Fin
                     ProjectCont1.Load(draft2Edit.Tasks);
                     ProjectCont1.ExecuteQuery();
                     //
@@ -375,7 +397,6 @@ namespace ConsoleAppProjectServerSSEC
                         tsk.Start = Convert.ToDateTime(fi);
                         tsk.Finish = Convert.ToDateTime(ff);
                         tsk.PercentComplete = porcent;
-                        //double costo = tsk.Cost;
 
                     }
 
@@ -402,14 +423,14 @@ namespace ConsoleAppProjectServerSSEC
         /// </summary>
         /// <param project_id="String">Identificar Grafico Unico de proyecto del lado de MYSQL </param>
         /// 
-        private void insertProject(string project_id, string name, string description, string grouper, string compromise, DateTime start_date, DateTime end_date, string institution, string action_line, string responsable, double monto, string ubicacion)
+        private void insertProject(string created_at, string project_id, string name, string description, string grouper, string compromise, DateTime start_date, DateTime end_date, string institution, string action_line, string responsable, double monto, string ubicacion)
         {
             try
             {
                 string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
                 connect = new MySqlConnection(connectionString);
-                string sql = "INSERT INTO `" + db + "`.`projects` (`project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`, `monto`,`ubicacion`) ";
-                sql += " VALUES ('" + project_id + "','" + name + "','" + description + "','" + grouper + "','" + compromise + "','" + start_date + "','" + end_date + "','" + institution + "','" + action_line + "','" + responsable + "'," + monto + ",'" + ubicacion + "');";
+                string sql = "INSERT INTO `" + db + "`.`projects` (`created_at`, `project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`, `monto`,`ubicacion`) ";
+                sql += " VALUES ('"+ created_at+ "','" + project_id + "','" + name + "','" + description + "','" + grouper + "','" + compromise + "','" + start_date + "','" + end_date + "','" + institution + "','" + action_line + "','" + responsable + "'," + monto + ",'" + ubicacion + "');";
 
                 if (Existe(project_id) != true)
                 {
@@ -469,7 +490,7 @@ namespace ConsoleAppProjectServerSSEC
                     Guid[] block = new Guid[PROJECT_BLOCK_SIZE];
                     Array.Copy(idBlock.ToArray(), block, idBlock.Count());
                     DateTime hoy = DateTime.Today;
-                    DateTime ayer = hoy.AddDays(Convert.ToInt32(dias_i));
+                    DateTime ayer = hoy.AddDays(-Convert.ToInt32(dias_i));
                     string last = ayer.ToShortDateString();
 
                     var projBlk = ProjectCont1.LoadQuery(
@@ -511,7 +532,7 @@ namespace ConsoleAppProjectServerSSEC
                         var tareas =  pubProj.Tasks;
                        foreach (PublishedTask tsk in tareas)
                         {
-                            monto = tsk.Cost;
+                            monto = tsk.Cost;                                                  
 
                         }
 
@@ -535,6 +556,10 @@ namespace ConsoleAppProjectServerSSEC
                             string action_line = "";
                             string responsable = "";
                             string ubicacion = "";
+                            string created_at = fechaA.ToString("yyyy-MM-dd");
+                         //   DateTime.ParseExact(InputDate, "dd/MM/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd"));
+
+                           
 
                             var projECFs = pubProj.IncludeCustomFields.CustomFields;
                             Dictionary<string, object> ECFValues = pubProj.IncludeCustomFields.FieldValues;
@@ -566,7 +591,7 @@ namespace ConsoleAppProjectServerSSEC
 
                             }
 
-                            insertProject(project_id, name, description, grouper, compromise, start_date, end_date, institution, action_line, responsable, monto, ubicacion);
+                            insertProject(created_at, project_id, name, description, grouper, compromise, start_date, end_date, institution, action_line, responsable, monto, ubicacion);
                             //(id ,deleted_at ,created_at ,updated_at ,project_id ,name ,description ,grouper ,compromise ,amount ,progress ,risk ,amount2 ,progress2 ,risk_description ,start_date ,end_date ,institution ,action_line ,responsable ,responsable_phone ,responsable_email ,monto ,ubicacion)
                         }
                     }
