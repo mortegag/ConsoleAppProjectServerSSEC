@@ -62,7 +62,7 @@ namespace ConsoleAppProjectServerSSEC
         string dias_i = "";
         string dias_a = "";
         string project_id;
-        string encriptar;
+        bool coleccion_vacia=false;
         static csom.ProjectContext ProjectCont1;
         MySqlConnection connect = new MySqlConnection();
         string exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
@@ -159,7 +159,7 @@ namespace ConsoleAppProjectServerSSEC
                     //
                 }
          
-                if (p.credencial == "") //Contraseña de SMTP
+                if (p.credencial == "" && p.envioemail == "Si") //Contraseña de SMTP
                 {
 
                     Console.Write("Introdusca password SMTP : ");
@@ -173,7 +173,7 @@ namespace ConsoleAppProjectServerSSEC
                     //
                 }
                 p.passw = Seguridad.DesEncriptar(p.passw.Trim());
-                p.credencial = Seguridad.DesEncriptar(p.credencial.Trim()); 
+                if (p.envioemail=="Si"){ p.credencial = Seguridad.DesEncriptar(p.credencial.Trim()); } 
                 p.passWord = Seguridad.DesEncriptar(p.passWord.Trim());
                 p.conn();
 
@@ -244,12 +244,12 @@ namespace ConsoleAppProjectServerSSEC
 
             try
             {
-
+                string mensaje = "";
                 string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
                 connect = new MySqlConnection(connectionString);
 
                 //(string gui, string fi, string ff, string duracion, int porcent)
-                string sql = "SELECT project_id, start_date, end_date,progress_fin,updated_at, name  from " + db + ".projects";
+                string sql = "SELECT project_id, start_date, end_date,progress_fin  from " + db + ".projects";
                 sql += " where updated_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " OR  created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
                 sql += " OR created_at >= DATE_FORMAT((SYSDATE() - INTERVAL " + dias_a + " DAY), '%Y-%m-%d')";
@@ -277,11 +277,17 @@ namespace ConsoleAppProjectServerSSEC
                             //Funcion de actualizacion de resitros en el Project
                             UddateTask(row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
                             //Lista de GUI lado Mysql para Borrar
-                            ssec_gui = new List<string>();
-                            ssec_gui.Add(row[0].ToString());
-                            string mensaje ="Project GUI :"+row[0] + "Project Name :" + row[5].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
-                            Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
-                            escribir_log(mensaje, "se actualizaron estos registro en Project Online desde Mysql");
+                            if (coleccion_vacia == true)
+                            { mensaje = "El Project codigo GUI :" + row[0] + " no existe en el TENANT project server de Produccion"; }
+                            else
+                            { 
+                               // ssec_gui = new List<string>();
+                               // ssec_gui.Add(row[0].ToString());
+                                mensaje ="Project GUI :"+row[0] + "Project Name :" + row[5].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
+                                Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
+                                escribir_log(mensaje, "se actualizaron estos registro en Project Online desde Mysql");
+                            }
+                          
 
                         }
 
@@ -382,11 +388,11 @@ namespace ConsoleAppProjectServerSSEC
 
                     if (jobState == JobState.Success)
                     {
-
+                        coleccion_vacia = false;
                     }
 
                 }
-                else { }
+                else { coleccion_vacia = true; }
 
             }
         }
@@ -433,8 +439,7 @@ namespace ConsoleAppProjectServerSSEC
             connect = new MySqlConnection(connectionString);
             string sql = " SELECT count(*) FROM aigdb_ssec.projects WHERE project_id='" + GUI + "';";
             MySqlCommand cmd = new MySqlCommand(sql, connect);
-            //cmd.Parameters.AddWithValue("Id", GUI);
-            cmd.Parameters.Add("Id", GUI);
+               
             if (connect.State != ConnectionState.Open) { connect.Open(); }
             int count = Convert.ToInt32(cmd.ExecuteScalar());
             if (count == 0)
