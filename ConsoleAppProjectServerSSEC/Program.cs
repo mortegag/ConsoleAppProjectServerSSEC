@@ -37,9 +37,7 @@ namespace ConsoleAppProjectServerSSEC
             return result;
         }
     }
-
-
-
+    
     class Program
     {
         const int PROJECT_BLOCK_SIZE = 20;
@@ -349,61 +347,38 @@ namespace ConsoleAppProjectServerSSEC
         private void UddateTask(string gui, string fi, string ff, int porcent)
         {
 
+            customFieldProject(gui, "Agrupador de Proyecto", "prueba de actualizacio");
+
             using (ProjectCont1)
             {
+           
                 Guid ProjectGuid = new Guid(gui);
                 var projCollection = ProjectCont1.LoadQuery(
                  ProjectCont1.Projects
-                   .Where(p => p.Id == ProjectGuid)
-                   .Include(p =>p.Id,
-                       p => p.IncludeCustomFields,
-                       p => p.IncludeCustomFields.CustomFields,
-                       P => P.IncludeCustomFields.CustomFields.IncludeWithDefaultProperties(
-                            lu => lu.LookupTable,
-                            lu => lu.LookupEntries
-                        )
-                      )
-                   );
+                   .Where(p => p.Id == ProjectGuid));                              
                 ProjectCont1.ExecuteQuery();
-
-                //Otro Intento
-                var projId = ProjectCont1.Projects.First(p => p.Name == "Your Project Name").Id;
-                var cfInternalName = ProjectCont1.CustomFields.First(cf => cf.Name == "NameOfTheField").InternalName;
-                object cfValue = "Some value"; // the value can be 'null' as well
-                var proj = ProjectCont1.Projects.GetByGuid(projId);
-                var draftProj = proj.CheckOut();
-                draftProj.SetCustomFieldValue(cfInternalName, cfValue);
-                var cfsX = proj.CustomFields;
-                draftProj.Publish(true);
-
-                //
 
                 if (projCollection!=null)
                 {
-
                     csom.PublishedProject proj2Edit = projCollection.First();
                     DraftProject draft2Edit = proj2Edit.CheckOut();
                     ProjectCont1.Load(draft2Edit);
-                    // Modificado por Moises para actualizar en TENANT 
-                  
-
-                    //Fin
                     ProjectCont1.Load(draft2Edit.Tasks);
                     ProjectCont1.ExecuteQuery();
-                    //
+               
                     var tareas = draft2Edit.Tasks;
                     foreach (DraftTask tsk in tareas)
                     {
                         tsk.Start = Convert.ToDateTime(fi);
                         tsk.Finish = Convert.ToDateTime(ff);
                         tsk.PercentComplete = porcent;
-
+                        
                     }
 
                     draft2Edit.Publish(true);
                     csom.QueueJob qJob = ProjectCont1.Projects.Update();
                     csom.JobState jobState = ProjectCont1.WaitForQueue(qJob, 200);
-                    //
+                    
                     qJob = ProjectCont1.Projects.Update();
                     jobState = ProjectCont1.WaitForQueue(qJob, 20);
 
@@ -559,7 +534,6 @@ namespace ConsoleAppProjectServerSSEC
                             string created_at = fechaA.ToString("yyyy-MM-dd");
                          //   DateTime.ParseExact(InputDate, "dd/MM/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd"));
 
-                           
 
                             var projECFs = pubProj.IncludeCustomFields.CustomFields;
                             Dictionary<string, object> ECFValues = pubProj.IncludeCustomFields.FieldValues;
@@ -627,6 +601,100 @@ namespace ConsoleAppProjectServerSSEC
             }
         }
 
+        private void customFieldProject(string GUID, string customFieldName, string customFieldValue)
+        {
+            using (ProjectCont1)
+            {
+
+                Guid resUID = new Guid(GUID);
+                ProjectCont1.Load(ProjectCont1.EnterpriseResources);
+                ProjectCont1.Load(ProjectCont1.CustomFields);
+                ProjectCont1.ExecuteQuery();
+                int numResInCollection = ProjectCont1.EnterpriseResources.Count();
+                var usrs = ProjectCont1.Web.SiteUsers;
+                if (numResInCollection > 0)
+                {
+                    ProjectCont1.Load(ProjectCont1.EnterpriseResources.GetByGuid(resUID));
+                    ProjectCont1.Load(ProjectCont1.EntityTypes.ResourceEntity);
+                    ProjectCont1.ExecuteQuery();
+                    var entRes2Edit = ProjectCont1.EnterpriseResources.GetByGuid(resUID);
+                    var userCustomFields = entRes2Edit.CustomFields;
+                    Guid ResourceEntityUID = ProjectCont1.EntityTypes.ResourceEntity.ID;
+                    var customfield = ProjectCont1.CustomFields.Where(x => x.Name == customFieldName);
+                    entRes2Edit[customfield.First().InternalName] = customFieldName;
+                    entRes2Edit.CanLevel = !entRes2Edit.CanLevel;
+                    ProjectCont1.EnterpriseResources.Update();
+                   ProjectCont1.ExecuteQuery();
     
+                }
+
+            }
+
+        }
+        }
+
     }
-}
+
+    public static class  ProgramCustomField
+    {
+        private const string pwaPath = "https://radev/PWA/"; // Change the path for Project Web App.
+
+        // Set the Project Server client context.
+        private static ProjectContext projContext;
+
+        // For applications that access both the Project Server CSOM and the SharePoint CSOM, you could
+        // use the ProjectServer object. Those statements are commented out in this application.
+        // However, it is not necessary to instantiate a ProjectServer object, because the the
+        // ProjectContext object inherits from ClientContext in SharePoint.
+
+        static void  customFielsUpdate()
+        {
+         
+
+                projContext = new ProjectContext(pwaPath);
+            //GUID for reshmee auckloo
+            Guid resUID = new Guid("02C5EE34-5CE8-E411-80C1-00155D640C06");
+            string customFieldName = "Staff Number";
+            string customFieldValue = "000000";
+            // Get the list of published resources and custom fields in Project Web App.
+            projContext.Load(projContext.EnterpriseResources);
+            projContext.Load(projContext.CustomFields);
+            projContext.ExecuteQuery();
+            int numResInCollection = projContext.EnterpriseResources.Count();
+            var usrs = projContext.Web.SiteUsers;
+            if (numResInCollection > 0)
+            {
+                projContext.Load(projContext.EnterpriseResources.GetByGuid(resUID));
+                projContext.Load(projContext.EntityTypes.ResourceEntity);
+                projContext.ExecuteQuery();
+                var entRes2Edit = projContext.EnterpriseResources.GetByGuid(resUID);
+                var userCustomFields = entRes2Edit.CustomFields;
+                Guid ResourceEntityUID = projContext.EntityTypes.ResourceEntity.ID;
+                var customfield = projContext.CustomFields.Where(x => x.Name == customFieldName);
+                entRes2Edit[customfield.First().InternalName] = "3456";
+                Console.WriteLine("\nEditing resource : GUID : Can Level");
+                Console.WriteLine("\n{0} : {1} : {2}", entRes2Edit.Name, entRes2Edit.Id.ToString(),
+                entRes2Edit.CanLevel.ToString());
+                // Toggle the CanLevel property.
+                entRes2Edit.CanLevel = !entRes2Edit.CanLevel;
+                // The entRes2Edit object is in the EnterpriseResources collection.
+                projContext.EnterpriseResources.Update();
+                // Save the change.
+                projContext.ExecuteQuery();
+                // Check that the change was made.
+                projContext.Load(projContext.EnterpriseResources.GetByGuid(resUID));
+                projContext.ExecuteQuery();
+                entRes2Edit = projContext.EnterpriseResources.GetByGuid(resUID);
+                Console.WriteLine("\n\nChanged resource : GUID : Can Level");
+                Console.WriteLine("\n{0} : {1} : {2}", entRes2Edit.Name, entRes2Edit.Id.ToString(),
+                entRes2Edit.CanLevel.ToString());
+            }
+
+          //  Console.Write("\nPress any key to exit: ");
+          //  Console.ReadKey(false);
+
+        }
+
+    }
+
+
