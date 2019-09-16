@@ -37,7 +37,7 @@ namespace ConsoleAppProjectServerSSEC
             return result;
         }
     }
-    
+
     class Program
     {
         const int PROJECT_BLOCK_SIZE = 20;
@@ -60,12 +60,11 @@ namespace ConsoleAppProjectServerSSEC
         string dias_i = "";
         string dias_a = "";
         string project_id;
-        bool coleccion_vacia=false;
+        bool coleccion_vacia = false;
         static csom.ProjectContext ProjectCont1;
         MySqlConnection connect = new MySqlConnection();
         string exePath = System.Reflection.Assembly.GetEntryAssembly().Location;
         Timer tmrExecutor = new Timer();
-
         /*
         listado dep Proyectos nuevos del lado de Project Online de los 
         @project_New para insertar proyectos a MySql
@@ -122,7 +121,7 @@ namespace ConsoleAppProjectServerSSEC
                     //parametros para cantidad de dias para transacciones 
                     p.dias_i = row.SelectSingleNode("//rango_insert").InnerText;
                     p.dias_a = row.SelectSingleNode("//rango_update").InnerText;
-              
+
 
 
                 }
@@ -142,7 +141,7 @@ namespace ConsoleAppProjectServerSSEC
                     //
 
                 }
-       
+
                 if (p.passw == "") //Contraseña de Base de Datos
                 {
 
@@ -156,7 +155,7 @@ namespace ConsoleAppProjectServerSSEC
                     xmlDoc.Save(filepath);
                     //
                 }
-         
+
                 if (p.credencial == "" && p.envioemail == "Si") //Contraseña de SMTP
                 {
 
@@ -171,13 +170,15 @@ namespace ConsoleAppProjectServerSSEC
                     //
                 }
                 p.passw = Seguridad.DesEncriptar(p.passw.Trim());
-                if (p.envioemail=="Si"){ p.credencial = Seguridad.DesEncriptar(p.credencial.Trim()); } 
+                if (p.envioemail == "Si") { p.credencial = Seguridad.DesEncriptar(p.credencial.Trim()); }
                 p.passWord = Seguridad.DesEncriptar(p.passWord.Trim());
                 p.conn();
 
-                if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
-                if (p.actualizar == "Si") { p.MysqltoProject(); }
-                if (p.envioemail == "Si") { p.enviarCorreo(); }
+                // if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
+                // if (p.actualizar == "Si") { p.MysqltoProject(); }
+                //  if (p.envioemail == "Si") { p.enviarCorreo(); }
+
+                p.actualizaCamposPersonalizados();
             }
 
 
@@ -233,7 +234,7 @@ namespace ConsoleAppProjectServerSSEC
             ProjectCont1.Credentials = new SharePointOnlineCredentials(userName, securePassword);
             Console.WriteLine("Se conecto a Project Server ");
 
-    
+
         }
         /// <sumary>
         /// Funcion que permite leer los registros de la base de datos de MYSQL para actualizar
@@ -274,19 +275,18 @@ namespace ConsoleAppProjectServerSSEC
 
 
                             //Funcion de actualizacion de resitros en el Project
-                            UpdateProjectField(row[0].ToString());
-       
+                           
                             //UddateTask(row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
                             //Lista de GUI lado Mysql para Borrar
                             if (coleccion_vacia == true)
                             { mensaje = "El Project codigo GUI :" + row[0] + " no existe en el TENANT , y no se actualizo en el"; }
                             else
-                            { 
-                               // ssec_gui = new List<string>();
-                               // ssec_gui.Add(row[0].ToString());
-                                mensaje ="Project GUI :"+row[0] + "Project Name :" + row[4].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
+                            {
+                                // ssec_gui = new List<string>();
+                                // ssec_gui.Add(row[0].ToString());
+                                mensaje = "Project GUI :" + row[0] + "Project Name :" + row[4].ToString() + ", start date : " + row[1].ToString() + ", end_date : " + row[2].ToString() + ", % progress : " + Convert.ToInt16(row[3]) + "";
                                 Console.WriteLine("\n{0}. {1}   {2} \t{3} \n lista de datos actualizados", row[0].ToString(), row[1].ToString(), row[2].ToString(), Convert.ToInt16(row[3]));
-                              
+
                             }
 
                             escribir_log(mensaje, " Project Online desde Mysql");
@@ -354,33 +354,33 @@ namespace ConsoleAppProjectServerSSEC
         {
 
             using (ProjectCont1)
-            {           
+            {
                 Guid ProjectGuid = new Guid(gui);
                 var projCollection = ProjectCont1.LoadQuery(
                  ProjectCont1.Projects
-                   .Where(p => p.Id == ProjectGuid));                              
+                   .Where(p => p.Id == ProjectGuid));
                 ProjectCont1.ExecuteQuery();
 
-                if (projCollection!=null)
+                if (projCollection != null)
                 {
                     csom.PublishedProject proj2Edit = projCollection.First();
                     DraftProject draft2Edit = proj2Edit.CheckOut();
                     ProjectCont1.Load(draft2Edit);
                     ProjectCont1.Load(draft2Edit.Tasks);
                     ProjectCont1.ExecuteQuery();
-               
+
                     var tareas = draft2Edit.Tasks;
                     foreach (DraftTask tsk in tareas)
                     {
                         tsk.Start = Convert.ToDateTime(fi);
                         tsk.Finish = Convert.ToDateTime(ff);
-                        tsk.PercentComplete = porcent;                        
+                        tsk.PercentComplete = porcent;
                     }
 
                     draft2Edit.Publish(true);
                     csom.QueueJob qJob = ProjectCont1.Projects.Update();
                     csom.JobState jobState = ProjectCont1.WaitForQueue(qJob, 200);
-                    
+
                     qJob = ProjectCont1.Projects.Update();
                     jobState = ProjectCont1.WaitForQueue(qJob, 20);
 
@@ -399,7 +399,6 @@ namespace ConsoleAppProjectServerSSEC
         /// verifica que previamente que no se duplique la informacion antes de insertarla
         /// </summary>
         /// <param project_id="String">Identificar Grafico Unico de proyecto del lado de MYSQL </param>
-        /// 
         private void insertProject(string created_at, string project_id, string name, string description, string grouper, string compromise, DateTime start_date, DateTime end_date, string institution, string action_line, string responsable, double monto, string ubicacion)
         {
             try
@@ -407,7 +406,7 @@ namespace ConsoleAppProjectServerSSEC
                 string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
                 connect = new MySqlConnection(connectionString);
                 string sql = "INSERT INTO `" + db + "`.`projects` (`created_at`, `project_id`, `name`, `description`, `grouper`, `compromise`, `start_date`, `end_date`, `institution`, `action_line`, `responsable`, `monto`,`ubicacion`) ";
-                sql += " VALUES ('"+ created_at+ "','" + project_id + "','" + name + "','" + description + "','" + grouper + "','" + compromise + "','" + start_date + "','" + end_date + "','" + institution + "','" + action_line + "','" + responsable + "'," + monto + ",'" + ubicacion + "');";
+                sql += " VALUES ('" + created_at + "','" + project_id + "','" + name + "','" + description + "','" + grouper + "','" + compromise + "','" + start_date + "','" + end_date + "','" + institution + "','" + action_line + "','" + responsable + "'," + monto + ",'" + ubicacion + "');";
 
                 if (Existe(project_id) != true)
                 {
@@ -437,7 +436,7 @@ namespace ConsoleAppProjectServerSSEC
             connect = new MySqlConnection(connectionString);
             string sql = " SELECT count(*) FROM aigdb_ssec.projects WHERE project_id='" + GUI + "';";
             MySqlCommand cmd = new MySqlCommand(sql, connect);
-               
+
             if (connect.State != ConnectionState.Open) { connect.Open(); }
             int count = Convert.ToInt32(cmd.ExecuteScalar());
             if (count == 0)
@@ -506,10 +505,10 @@ namespace ConsoleAppProjectServerSSEC
                         double monto = 0;
                         ProjectCont1.Load(pubProj.Tasks);
                         ProjectCont1.ExecuteQuery();
-                        var tareas =  pubProj.Tasks;
-                       foreach (PublishedTask tsk in tareas)
+                        var tareas = pubProj.Tasks;
+                        foreach (PublishedTask tsk in tareas)
                         {
-                            monto = tsk.Cost;                                                  
+                            monto = tsk.Cost;
 
                         }
 
@@ -526,7 +525,7 @@ namespace ConsoleAppProjectServerSSEC
                             string description = pubProj.Description;
                             DateTime start_date = pubProj.StartDate;
                             DateTime end_date = pubProj.FinishDate;
-                           
+
                             string grouper = "";
                             string compromise = "";
                             string institution = "";
@@ -534,7 +533,7 @@ namespace ConsoleAppProjectServerSSEC
                             string responsable = "";
                             string ubicacion = "";
                             string created_at = fechaA.ToString("yyyy-MM-dd");
-                         //   DateTime.ParseExact(InputDate, "dd/MM/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd"));
+                            //   DateTime.ParseExact(InputDate, "dd/MM/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd"));
 
 
                             var projECFs = pubProj.IncludeCustomFields.CustomFields;
@@ -578,350 +577,108 @@ namespace ConsoleAppProjectServerSSEC
             //  Console.Write("\nPress any key to exit: ");
             //  Console.ReadKey(false);
         }
-
-        private void DeleteProject()
-        {
-            try
-            {
-                string connectionString = "server=" + ip + ";uid=" + user + ";pwd=" + passw + " ;database=" + db + ";Convert Zero Datetime=True";
-                connect = new MySqlConnection(connectionString);
-                if (connect.State != ConnectionState.Open) { connect.Open(); }
-                var projectFaltan = project_gui.Except(ssec_gui.ToList());
-                foreach (string gui in projectFaltan)
-                {
-                    string sql = " Update projects "; //no se borra o elinmina sino que se actualiza el campo 
-                    sql += " WHERE gui =" + gui; // se debe hace un barrido de todos los proyectos de Project Server
-                    MySqlCommand cmd = new MySqlCommand(sql, connect); // para asegurarse de desactivar correctamente
-                    cmd.ExecuteNonQuery(); // por el tema de que los procesos son por rango de fecha
-                }
-                connect.Close();
-            }
-            catch (Exception ex)
-            {
-                ex.ToString();
-
-            }
-        }
-
-        public static void UpdateCustomFieldValues()
-        {
-            Guid Guid = new Guid("e4707c63-cbc9-e911-ab58-34f39add823a");
-
+        /// <sumary>
+        /// </summary>
+        private void actualizaCamposPersonalizados() {
             using (ProjectCont1)
-            {
+            {         
 
 
-                var projects = ProjectCont1.LoadQuery(
-                         ProjectCont1.Projects
-                        .Where(p => p.Id == Guid
-                        )
-                        .Include(p => p.Id,
-                            p => p.Name,
-                            p => p.Description,
-                            p => p.StartDate,
-                            p => p.FinishDate,
-                            p => p.CreatedDate,
-                            p => p.IncludeCustomFields,
-                            p => p.IncludeCustomFields.CustomFields,
-                            P => P.IncludeCustomFields.CustomFields.IncludeWithDefaultProperties(
-                                lu => lu.LookupTable,
-                                lu => lu.LookupEntries
-                            )
-                        )
-                    );
-
+                Guid entResUid = new Guid("888c9a81-5fce-e911-b081-00155db8343c");        
+            
+                ProjectCont1.Load(ProjectCont1.EnterpriseResources);
                 ProjectCont1.ExecuteQuery();
-                csom.PublishedProject project = projects.First();
-                if (project == null)
+
+                int numResInCollection = ProjectCont1.EnterpriseResources.Count();
+
+                if (numResInCollection > 0)
                 {
-                    Console.WriteLine("Failed to retrieve expected data, make sure you set up server data right. Press any key to continue....");
-                    return;
-                }
-                csom.DraftProject draft = project.CheckOut();
+                    var resources = ProjectCont1.LoadQuery(
+                                        ProjectCont1.EnterpriseResources.Where(
+                                        ept => ept.Id == entResUid));
+                                        ProjectCont1.ExecuteQuery();
 
-                // Retrieve project along with tasks & assignments & resources
-                ProjectCont1.Load(draft.Tasks, dt => dt.Where(t => t.Name == "taskName"));
-                ProjectCont1.Load(draft.Assignments, da => da.Where(a => a.Task.Name == "taskName" &&
-                                                                    a.Resource.Name == "localResourceName"));
-                ProjectCont1.Load(draft.ProjectResources, dp => dp.Where(r => r.Name == "localResourceName"));
-                ProjectCont1.ExecuteQuery();
+                    //  var InternalNameLookup = pubProj.CustomFields.LookupEntries.Where(x => x.FullValue == "Delay").First().InternalName;
 
-                // Make sure the data on server is right
-                if (draft.Tasks.Count != 1 || draft.Assignments.Count != 1 || draft.ProjectResources.Count != 1)
-                {
-                    Console.WriteLine("Failed to retrieve expected data, make sure you set up server data right. Press any key to continue....");
-                    Console.ReadLine();
-                    return;
-                }
+                    var cfInternalName = "8278f521-c0cd-e911-b083-00155db4822a";
 
-                // Since we already filetered and validated that the TaskCollection, ProjectResourceCollection and AssignmentCollection
-                // contains just one filtered item each, we just get the first one.
-                csom.DraftTask task = draft.Tasks.First();
-                csom.DraftProjectResource resource = draft.ProjectResources.First();
-                csom.DraftAssignment assignment = draft.Assignments.First();
-
-                // Retrieve custom field by name
-                ProjectCont1.Load(ProjectCont1.CustomFields);
-                ProjectCont1.ExecuteQuery();
-                csom.CustomField projCF = ProjectCont1.CustomFields.FirstOrDefault(cf => cf.Name == "projectCFName");
-                csom.CustomField taskCF = ProjectCont1.CustomFields.FirstOrDefault(cf => cf.Name == "taskCFName");
-                csom.CustomField resCF = ProjectCont1.CustomFields.FirstOrDefault(cf => cf.Name == "resourceCFName");
-
-                // Get random lookup table entry
-                csom.LookupEntry taskLookUpEntry = GetRandomLookupEntries(taskCF);
-
-                // Change project custom field value
-                draft[projCF.InternalName] = "Project custom field value";
-
-                // Change task custom field value
-                /*
-                  --------------------------Important!---------------------------
-                  if it is a lookup table customfield, need to be set as an array
-                */
-                task[taskCF.InternalName] = new[] { taskLookUpEntry.InternalName };
-
-                // Change resource and assignment custom field value
-                resource[resCF.InternalName] = "Resource custom field value";
-                assignment[resCF.InternalName] = "Assignment custom field value";
-
-                // Update project and check in
-                draft.Update();
-                csom.JobState jobState = ProjectCont1.WaitForQueue(draft.Publish(true), 20);
-                // JobStateLog(jobState, "Updating project customfield values");
-            }
-
-
-
-        }
-
-        private static csom.LookupEntry GetRandomLookupEntries(csom.CustomField cf)
-        {
-            ProjectCont1.Load(cf, c => c, c => c.LookupEntries);
-            ProjectCont1.ExecuteQuery();
-            try
-            {
-                Random r = new Random();
-                int index = r.Next(0, cf.LookupEntries.Count);
-                csom.LookupEntry lookUpEntry = cf.LookupEntries[index];
-                ProjectCont1.Load(lookUpEntry);
-                ProjectCont1.ExecuteQuery();
-                return lookUpEntry;
-            }
-            catch (CollectionNotInitializedException ex)
-            {
-                return null;
-            }
-        }
-
-        public void UpdateProjectField(string gui)
-        {
-            var resourceId = new Guid("2f7e6899-d9c8-e911-b070-00155db42408");
-            //UpdateCustomFieldValues();
-            using (ProjectCont1)
-            {
-
-                ProjectCont1.Load(ProjectCont1.CustomFields);
-                ProjectCont1.ExecuteQuery();
-
-                List<CustomField> customFieldList = new List<CustomField>();
-
-                var customFieldEnum = ProjectCont1.CustomFields.GetEnumerator();
-                while (customFieldEnum.MoveNext())
-                {
-                    var customField = cfEnumerator.Current;
-                    CustomField customFieldData = new CustomField(); //This is your custom class
-                    customFieldData.Id = customField.Id;
-                    customFieldData.Name = customField.Name;
-                    customFieldData.InternalName = customField.InternalName();
-                    customFieldList.Add(customField);
-                }
-
-                DraftProject draftProj = ProjectCont1.Projects.GetByGuid("Your Project ID").CheckOut();
-
-                foreach (CustomField customFieldListItem in customFieldList)
-                {
-                    if (customFieldListItem.Name == "Name of Field I'm Updating")
+                    foreach (EnterpriseResource res in resources)
                     {
-                        draftProj.SetCustomFieldValue(customFieldListItem.InternalName, "New Value");
-                        break;
+                        string[] Newval = new string[] { "8278f521-c0cd-e911-b083-00155db4822a" };
+                        res[cfInternalName] = Newval;
                     }
+                    ProjectCont1.EnterpriseResources.Update();
+                    ProjectCont1.ExecuteQuery();
+
                 }
 
-                draftProj.Update();
-                var publishJob = draftProj.Publish(true); //True, because we want to check it in.
-                JobState jobStateUpdate = ProjectCont1.WaitForQueue(publishJob, 30); //The 30 is a timeout for how long to wait before moving on to the next job in the queue.
+            }
+         }
+        private static void ModifyExistingLookupEntry(Guid LookupTableGuid)
+        {
+            using (ProjectCont1)
+            {
+                LookupTable ExistingLookupTable = ProjectCont1.LookupTables.GetByGuid(LookupTableGuid);
 
-                //
-
-
-
-                Guid ProjectGuid = new Guid(gui);
-                var proj = ProjectCont1.Projects.GetByGuid(ProjectGuid).IncludeCustomFields;
-                var allECFields = ProjectCont1.LoadQuery(ProjectCont1.CustomFields.Include(
-                        qp => qp.InternalName,
-                        qp => qp.Name,
-                        qp => qp.FieldType,
-                        qp => qp.LookupTable,
-                        qp => qp.EntityType.Name
-                    )
-                    .OrderBy(qp => qp.EntityType.Name));
-
+                ProjectCont1.Load(ExistingLookupTable.Entries);
                 ProjectCont1.ExecuteQuery();
 
-              
+                LookupEntry ExistingLookupEntry = ExistingLookupTable.Entries.Where(x => x.FullValue == "aa.bbb").SingleOrDefault();
+                LookupEntry ExistingParentLookupEntry = ExistingLookupTable.Entries.Where(x => x.FullValue == "aa").SingleOrDefault();
 
-                // Retrieve Enterprise Custom Field
-                var field = ProjectCont1.CustomFields.GetByGuid(ProjectGuid);
-                ProjectCont1.Load(field, x => x.InternalName);
+                //use a LookupEntryCreationInformation object? That doesn't seem right. 
+                //but, if the id is the same as an existing id, it seems to work...
+                //and, if you don't specify the parentid, it will be cleared, and the item will no longer be a child item
+                LookupEntryCreationInformation FirstNewLookupEntry = new LookupEntryCreationInformation();
+                FirstNewLookupEntry.Description = ExistingLookupEntry.Description;
+                FirstNewLookupEntry.Id = ExistingLookupEntry.Id;
+                FirstNewLookupEntry.ParentId = ExistingParentLookupEntry.Id;
+                FirstNewLookupEntry.Value = new LookupEntryValue();
+                FirstNewLookupEntry.Value.TextValue = "mmm";
+
+                ExistingLookupTable.Entries.Add(FirstNewLookupEntry);
+                ProjectCont1.LookupTables.Update();
                 ProjectCont1.ExecuteQuery();
-                var fieldInternalName = field.InternalName;
+            }
+        }
 
-                // Retrieve recource by its Id
-                var resource = ProjectCont1.EnterpriseResources.GetByGuid(resourceId);
+        private static void CreateLookup(Guid LookupTableGuid)
+        {
+           
 
-                // Load custom field value
-                ProjectCont1.Load(resource, x => x[fieldInternalName]);
+        }
+
+        private static void AddEntriesToExistingLookup(Guid LookupTableGuid)
+        {
+
+            using (ProjectCont1)
+            {
+                Guid id = new Guid("888c9a81-5fce-e911-b081-00155db8343c");
+                CustomFieldCollection customFields = ProjectCont1.CustomFields;
+                EnterpriseResourceCollection resources = ProjectCont1.EnterpriseResources;
+                ProjectCont1.Load(ProjectCont1.EnterpriseResources.GetByGuid(id));
                 ProjectCont1.ExecuteQuery();
 
-                // Update ECF value
-                resource[fieldInternalName] = "Vitaly Zhukov";
+                CustomField cfPersonType;
+                String cfPersonTypeInternalName;
+                cfPersonType = customFields.First(c => c.Name == "Agrupador de Proyecto");
+                cfPersonTypeInternalName = cfPersonType.InternalName;
+
+                //EnterpriseResource res = ProjectCont1.EnterpriseResources.GetByGuid(id);
+                // ProjectCont1.Load(res);
+                
+               var cfInternalName = "Custom_8278f521c0cde911b08300155db4822a";
+                foreach (EnterpriseResource res in resources)
+                {
+                    string[] Newval = new string[] { "Entry_333982d27604e511943500155d569905" };     
+                    res[cfInternalName] = Newval;
+                }
+
                 ProjectCont1.EnterpriseResources.Update();
                 ProjectCont1.ExecuteQuery();
 
-                // Get ECF value from server
-                ProjectCont1.Load(resource,
-                    x => x[fieldInternalName]);
-                ProjectCont1.ExecuteQuery();
-
-
-                //
-
-
-                foreach (Microsoft.ProjectServer.Client.CustomField ECF in allECFields)
-                {
-                    if (ECF.Name == "Agrupador de Proyecto")
-                    {
-                        DraftProject prjDraft = proj.CheckOut().IncludeCustomFields;
-                        ProjectCont1.ExecuteQuery();
-                        prjDraft.IncludeCustomFields.FieldValues.Add(ECF.InternalName, "Agrupador de Proyecto");
-                        prjDraft.IncludeCustomFields.FieldValues[ECF.InternalName] = "Pilar1";
-                        prjDraft.Update();
-                             csom.JobState jobState = ProjectCont1.WaitForQueue(prjDraft.Publish(true), 20);
-
-
-
-                    }
-
-                }
             }
-
-    
-        }
-
-        private void customFieldProject(string GUID, string customFieldName, string customFieldValue)
-        {
-            using (ProjectCont1)
-            {
-
-                Guid resUID = new Guid(GUID);
-                ProjectCont1.Load(ProjectCont1.EnterpriseResources);
-                ProjectCont1.Load(ProjectCont1.CustomFields);
-                ProjectCont1.ExecuteQuery();
-                int numResInCollection = ProjectCont1.EnterpriseResources.Count();
-                var usrs = ProjectCont1.Web.SiteUsers;
-                //
-      
-                //
-                if (numResInCollection > 0)
-                {
-
-                    //
-                    //
-
-                    ProjectCont1.Load(ProjectCont1.EnterpriseResources.GetByGuid(resUID));
-                    ProjectCont1.Load(ProjectCont1.EntityTypes.ResourceEntity);
-                    ProjectCont1.ExecuteQuery();
-                    var entRes2Edit = ProjectCont1.EnterpriseResources.GetByGuid(resUID);
-                    var userCustomFields = entRes2Edit.CustomFields;
-                    Guid ResourceEntityUID = ProjectCont1.EntityTypes.ResourceEntity.ID;
-                    var customfield = ProjectCont1.CustomFields.Where(x => x.Name == customFieldName);
-                    entRes2Edit[customfield.First().InternalName] = customFieldName;
-                    Console.WriteLine("\nEditing resource : GUID : Can Level");
-                    Console.WriteLine("\n{0} : {1} : {2}", entRes2Edit.Name, entRes2Edit.Id.ToString(),
-                    entRes2Edit.CanLevel.ToString());
-                    entRes2Edit.CanLevel = !entRes2Edit.CanLevel;
-                    ProjectCont1.EnterpriseResources.Update();
-                   ProjectCont1.ExecuteQuery();
-    
-                }
-
-            }
-
-        }
         }
 
     }
-
-    public static class  ProgramCustomField
-    {
-        private const string pwaPath = "https://radev/PWA/"; // Change the path for Project Web App.
-
-        // Set the Project Server client context.
-        private static ProjectContext projContext;
-
-        // For applications that access both the Project Server CSOM and the SharePoint CSOM, you could
-        // use the ProjectServer object. Those statements are commented out in this application.
-        // However, it is not necessary to instantiate a ProjectServer object, because the the
-        // ProjectContext object inherits from ClientContext in SharePoint.
-
-        static void  customFielsUpdate()
-        {
-         
-
-                projContext = new ProjectContext(pwaPath);
-            //GUID for reshmee auckloo
-            Guid resUID = new Guid("02C5EE34-5CE8-E411-80C1-00155D640C06");
-            string customFieldName = "Staff Number";
-            string customFieldValue = "000000";
-            // Get the list of published resources and custom fields in Project Web App.
-            projContext.Load(projContext.EnterpriseResources);
-            projContext.Load(projContext.CustomFields);
-            projContext.ExecuteQuery();
-            int numResInCollection = projContext.EnterpriseResources.Count();
-            var usrs = projContext.Web.SiteUsers;
-            if (numResInCollection > 0)
-            {
-                projContext.Load(projContext.EnterpriseResources.GetByGuid(resUID));
-                projContext.Load(projContext.EntityTypes.ResourceEntity);
-                projContext.ExecuteQuery();
-                var entRes2Edit = projContext.EnterpriseResources.GetByGuid(resUID);
-                var userCustomFields = entRes2Edit.CustomFields;
-                Guid ResourceEntityUID = projContext.EntityTypes.ResourceEntity.ID;
-                var customfield = projContext.CustomFields.Where(x => x.Name == customFieldName);
-                entRes2Edit[customfield.First().InternalName] = "3456";
-                Console.WriteLine("\nEditing resource : GUID : Can Level");
-                Console.WriteLine("\n{0} : {1} : {2}", entRes2Edit.Name, entRes2Edit.Id.ToString(),
-                entRes2Edit.CanLevel.ToString());
-                // Toggle the CanLevel property.
-                entRes2Edit.CanLevel = !entRes2Edit.CanLevel;
-                // The entRes2Edit object is in the EnterpriseResources collection.
-                projContext.EnterpriseResources.Update();
-                // Save the change.
-                projContext.ExecuteQuery();
-                // Check that the change was made.
-                projContext.Load(projContext.EnterpriseResources.GetByGuid(resUID));
-                projContext.ExecuteQuery();
-                entRes2Edit = projContext.EnterpriseResources.GetByGuid(resUID);
-                Console.WriteLine("\n\nChanged resource : GUID : Can Level");
-                Console.WriteLine("\n{0} : {1} : {2}", entRes2Edit.Name, entRes2Edit.Id.ToString(),
-                entRes2Edit.CanLevel.ToString());
-            }
-
-            Console.Write("\nPress any key to exit: ");
-            Console.ReadKey(false);
-
-        }
-
-    }
-
-
+}
