@@ -172,7 +172,7 @@ namespace ConsoleAppProjectServerSSEC
                 //  if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
                 //  if (p.actualizar == "Si") { p.MysqltoProject(); }
                 //  if (p.envioemail == "Si") { p.enviarCorreo(); }
-                Modify();
+                p.Modify();
             }
 
 
@@ -584,8 +584,10 @@ namespace ConsoleAppProjectServerSSEC
 
             }
          }
-        private static void Modify()
+        private  void Modify()
         {
+            string g = "";
+
             using (ProjectCont1)
             {
                 ProjectCont1.Load(ProjectCont1.Projects, c => c.IncludeWithDefaultProperties(pr => pr.CustomFields,
@@ -600,9 +602,12 @@ namespace ConsoleAppProjectServerSSEC
                         foreach (var customfield in item.IncludeCustomFields.FieldValues)
                         {
                             string k = customfield.Key;
-                            if (k == "")
+                         //   escribir_log(k, " Project Custom Field ");
+
+
+                            if (k == "Custom_b18d6d025dcee911b08f00155db46231")
                             {
-                                var lookup = ProjectCont1.LoadQuery(ProjectCont1.LookupTables.Where(x => x.Name == "Agrupadores"));
+                                var lookup = ProjectCont1.LoadQuery(ProjectCont1.LookupTables.Where(x => x.Name == "Lineas de Acción"));
                                 ProjectCont1.ExecuteQuery();
                                 string lookuptypeCustomFieldValue = string.Empty;
 
@@ -618,11 +623,12 @@ namespace ConsoleAppProjectServerSSEC
                                             string cmp = ((string[])(customfield.Value))[i].ToString();
                                             string ent = en.Id.ToString().Replace("-", "");
 
-                                            if (cmp == "Entry_" + ent)
+                                            if (cmp != "Entry_" + ent)
                                             {
                                                 lookuptypeCustomFieldValue = en.FullValue;
-                                                Console.WriteLine("valor es ", lookuptypeCustomFieldValue);
-                                                Console.ReadLine();
+                                                escribir_log(lookuptypeCustomFieldValue, " Project Custom Field ");
+                                             //   Console.WriteLine("valor es ", lookuptypeCustomFieldValue);
+                                             //   Console.ReadLine();
                                             }
 
 
