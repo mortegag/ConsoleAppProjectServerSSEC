@@ -169,10 +169,10 @@ namespace ConsoleAppProjectServerSSEC
                 if (p.envioemail == "Si") { p.credencial = Seguridad.DesEncriptar(p.credencial.Trim()); }
                 p.passWord = Seguridad.DesEncriptar(p.passWord.Trim());
                 p.conn();
-                 if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
-                 if (p.actualizar == "Si") { p.MysqltoProject(); }
-                 if (p.envioemail == "Si") { p.enviarCorreo(); }
-               // p.actualizaCamposPersonalizados();
+                //  if (p.insertar == "Si") { p.CamposPersonalizadosProject(); }
+                //  if (p.actualizar == "Si") { p.MysqltoProject(); }
+                //  if (p.envioemail == "Si") { p.enviarCorreo(); }
+                Modify();
             }
 
 
@@ -584,10 +584,65 @@ namespace ConsoleAppProjectServerSSEC
 
             }
          }
-        private static void ModifyExistingLookupEntry(Guid LookupTableGuid)
+        private static void Modify()
         {
             using (ProjectCont1)
-            {    
+            {
+                ProjectCont1.Load(ProjectCont1.Projects, c => c.IncludeWithDefaultProperties(pr => pr.CustomFields,
+                                             prop => prop.IncludeCustomFields, pr => pr.IncludeCustomFields.CustomFields));
+                ProjectCont1.ExecuteQuery();
+
+                foreach (PublishedProject item in ProjectCont1.Projects)
+                {
+                    if(item.Name == "PROYECTO TEST MOISES")
+                    {
+
+                        foreach (var customfield in item.IncludeCustomFields.FieldValues)
+                        {
+                            string k = customfield.Key;
+                            if (k == "")
+                            {
+                                var lookup = ProjectCont1.LoadQuery(ProjectCont1.LookupTables.Where(x => x.Name == "Agrupadores"));
+                                ProjectCont1.ExecuteQuery();
+                                string lookuptypeCustomFieldValue = string.Empty;
+
+                                foreach (LookupTable tb in lookup)
+                                {
+                                    ProjectCont1.Load(tb.Entries);
+                                    ProjectCont1.ExecuteQuery();
+
+                                    foreach(LookupEntry en in tb.Entries)
+                                    {
+                                        for (int i = 0; i < ((string[])(customfield.Value)).Count(); i++)
+                                        {
+                                            string cmp = ((string[])(customfield.Value))[i].ToString();
+                                            string ent = en.Id.ToString().Replace("-", "");
+
+                                            if (cmp == "Entry_" + ent)
+                                            {
+                                                lookuptypeCustomFieldValue = en.FullValue;
+                                                Console.WriteLine("valor es ", lookuptypeCustomFieldValue);
+                                                Console.ReadLine();
+                                            }
+
+
+                                        }
+
+                                    }
+
+                                } 
+
+
+                            }
+
+                           
+
+                        }
+
+                    }
+
+                }
+
 
             }
         }
