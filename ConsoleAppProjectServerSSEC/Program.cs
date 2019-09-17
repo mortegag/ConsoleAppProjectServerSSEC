@@ -596,14 +596,12 @@ namespace ConsoleAppProjectServerSSEC
 
                 foreach (PublishedProject item in ProjectCont1.Projects)
                 {
-                    if(item.Name == "PROYECTO TEST MOISES")
+                    if (item.Name == "PROYECTO TEST MOISES")
                     {
 
                         foreach (var customfield in item.IncludeCustomFields.FieldValues)
                         {
                             string k = customfield.Key;
-                         //   escribir_log(k, " Project Custom Field ");
-
 
                             if (k == "Custom_b18d6d025dcee911b08f00155db46231")
                             {
@@ -616,17 +614,51 @@ namespace ConsoleAppProjectServerSSEC
                                     ProjectCont1.Load(tb.Entries);
                                     ProjectCont1.ExecuteQuery();
 
+
                                     //
 
-                                    CustomFieldCollection customFields = ProjectCont1.CustomFields;
+                                    // Load resources and custom fields
+                                    ProjectCont1.Load(ProjectCont1.EnterpriseResources);
+                                    ProjectCont1.Load(ProjectCont1.CustomFields);
+                                    ProjectCont1.Load(ProjectCont1.LookupTables);
+                                    ProjectCont1.ExecuteQuery();
+
+                                    var newResourceId = Guid.NewGuid();
+                                    var newResourceInfo = new EnterpriseResourceCreationInformation
+                                    {
+                                        Id = newResourceId,
+                                        IsBudget = false,
+                                        IsGeneric = false,
+                                        IsInactive = false,
+                                        Name = "CSOM_EnterpriseResource_",
+                                        ResourceType = EnterpriseResourceType.Work
+                                    };
+                                    ProjectCont1.EnterpriseResources.Add(newResourceInfo);
+                                    ProjectCont1.EnterpriseResources.Update();
+                                    ProjectCont1.Load(ProjectCont1.EnterpriseResources);
                                     EnterpriseResourceCollection resources = ProjectCont1.EnterpriseResources;
-                                    ProjectCont1.Load(ProjectCont1.EnterpriseResources.GetByGuid(rs.Id));
-                                    ProjectCont1.ExecuteQuery();                                  
-                                    CustomField cfPersonType;
-                                    String cfPersonTypeInternalName;
-                                    cfPersonType = customFields.First(c => c.Name == "Resource_HR_Person_Type");
-                                    cfPersonTypeInternalName = cfPersonType.InternalName;
-                                    //
+                                    ProjectCont1.ExecuteQuery();
+                                                                                                         
+                                    EnterpriseResource newResource = ProjectCont1.EnterpriseResources.GetByGuid(newResourceId);
+                                    LookupTable lTable = ProjectCont1.LookupTables.First(lut => lut.Name == "Lineas de Acción");
+                                    ProjectCont1.Load(lTable.Entries);
+                                    ProjectCont1.ExecuteQuery();
+                                    LookupEntry entry = lTable.Entries.First(c => c.FullValue.EndsWith("PROPANAMA"));
+                                    CustomField cField = ProjectCont1.CustomFields.First(c => c.Name == "Línea de Acción");
+                                    var cfInternalName = "Custom_b18d6d025dcee911b08f00155db46231";
+                                    foreach (EnterpriseResource res in resources)
+                                    {
+                                        string[] NuevoValor = new string[] {"Entry_e6eae594becde911b08000155db84c31"};
+                                        res[cfInternalName] = NuevoValor;
+                                       // res[cField.InternalName] = entry.FullValue;
+                                    }
+                                    ProjectCont1.EnterpriseResources.Update();
+                                    ProjectCont1.ExecuteQuery();
+
+                                    //  newResource[cField.InternalName] = entry.FullValue;
+                                   // ProjectCont1.ExecuteQuery();
+                                   // ProjectCont1.EnterpriseResources.Update();
+
 
 
                                     foreach (LookupEntry en in tb.Entries)
@@ -639,9 +671,8 @@ namespace ConsoleAppProjectServerSSEC
                                             if (cmp != "Entry_" + ent)
                                             {
                                                 lookuptypeCustomFieldValue = en.FullValue;
-                                                escribir_log(lookuptypeCustomFieldValue, " Project Custom Field ");
-                                             //   Console.WriteLine("valor es ", lookuptypeCustomFieldValue);
-                                             //   Console.ReadLine();
+                                                escribir_log(lookuptypeCustomFieldValue + " Project CMP : " + cmp + " , ENT : " + ent, " Project CMP : " + cmp + " , ENT : " + ent);
+
                                             }
 
 
@@ -649,12 +680,12 @@ namespace ConsoleAppProjectServerSSEC
 
                                     }
 
-                                } 
+                                }
 
 
                             }
 
-                           
+
 
                         }
 
@@ -662,8 +693,8 @@ namespace ConsoleAppProjectServerSSEC
 
                 }
 
-
             }
+            
         }
 
         private static void CreateLookup(Guid LookupTableGuid)
