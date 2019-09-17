@@ -616,7 +616,20 @@ namespace ConsoleAppProjectServerSSEC
                                     ProjectCont1.Load(tb.Entries);
                                     ProjectCont1.ExecuteQuery();
 
-                                    foreach(LookupEntry en in tb.Entries)
+                                    //
+
+                                    CustomFieldCollection customFields = ProjectCont1.CustomFields;
+                                    EnterpriseResourceCollection resources = ProjectCont1.EnterpriseResources;
+                                    ProjectCont1.Load(ProjectCont1.EnterpriseResources.GetByGuid(rs.Id));
+                                    ProjectCont1.ExecuteQuery();                                  
+                                    CustomField cfPersonType;
+                                    String cfPersonTypeInternalName;
+                                    cfPersonType = customFields.First(c => c.Name == "Resource_HR_Person_Type");
+                                    cfPersonTypeInternalName = cfPersonType.InternalName;
+                                    //
+
+
+                                    foreach (LookupEntry en in tb.Entries)
                                     {
                                         for (int i = 0; i < ((string[])(customfield.Value)).Count(); i++)
                                         {
